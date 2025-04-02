@@ -13,7 +13,7 @@ Key features:
 
 ## Installation
 
-`go get github.com/coze-dev/loop-go`
+`go get github.com/coze-dev/cozeloop-go`
 
 ## Usage
 

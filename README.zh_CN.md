@@ -14,7 +14,7 @@ Loop SDK 是一个用于与 [CozeLoop 平台](https://loop.coze.cn) 进行交互
 
 ## 安装
 
-`go get github.com/coze-dev/loop-go`
+`go get github.com/coze-dev/cozeloop-go`
 
 ## 用法
 
