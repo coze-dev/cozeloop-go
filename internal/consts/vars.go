@@ -5,7 +5,7 @@ package consts
 
 import "reflect"
 
-import "code.byted.org/flowdevops/loop-go/attribute/trace"
+import "github.com/coze-dev/cozeloop-go/attribute/trace"
 
 // span
 

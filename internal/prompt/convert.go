@@ -4,7 +4,7 @@
 package prompt
 
 import (
-	"code.byted.org/flowdevops/loop-go/attribute/trace"
+	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/util"
 )

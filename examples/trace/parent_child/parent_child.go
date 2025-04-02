@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"code.byted.org/flowdevops/loop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go"
+	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 )
 

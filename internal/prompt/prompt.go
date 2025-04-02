@@ -11,7 +11,7 @@ import (
 
 	"github.com/valyala/fasttemplate"
 
-	attribute "code.byted.org/flowdevops/loop-go/attribute/trace"
+	attribute "github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"

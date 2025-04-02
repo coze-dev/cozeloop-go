@@ -3,9 +3,9 @@ module github.com/coze-dev/cozeloop-go
 go 1.18
 
 require (
-	code.byted.org/flowdevops/loop-go/attribute v0.0.0-20250327031408-11a98cc75c5b
 	github.com/bluele/gcache v0.0.2
 	github.com/bytedance/mockey v1.2.14
+	github.com/coze-dev/cozeloop-go/attribute v0.1.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/valyala/fasttemplate v1.2.2

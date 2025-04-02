@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"code.byted.org/flowdevops/loop-go/attribute/trace"
+	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
