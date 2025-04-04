@@ -37,12 +37,12 @@ type Span interface {
 type commonSpanSetter interface {
 	// SetInput key: `input`
 	// Input information. The input will be serialized into a JSON string.
-	// The recommended standard format is ModelInput of attribute package, but custom fields can also be used.
+	// The recommended standard format is ModelInput of spec package, but custom fields can also be used.
 	SetInput(ctx context.Context, input interface{})
 
 	// SetOutput key: `output`
 	// Output information. The output will be serialized into a JSON string.
-	// The recommended standard format is ModelOutput of attribute package, but custom fields can also be used.
+	// The recommended standard format is ModelOutput of spec package, but custom fields can also be used.
 	SetOutput(ctx context.Context, output interface{})
 
 	// SetError key: `error`
@@ -85,6 +85,11 @@ type commonSpanSetter interface {
 	// The Name of the LLM model, such as: gpt-4-1106-preview.
 	SetModelName(ctx context.Context, modelName string)
 	SetModelNameBaggage(ctx context.Context, modelName string)
+
+	// SetModelCallOptions key: `call_options`
+	// The call options of the LLM, such as temperature, max_tokens, etc.
+	// The recommended standard format is CallOption of spec package
+	SetModelCallOptions(ctx context.Context, callOptions interface{})
 
 	// SetInputTokens key: `input_tokens`
 	// The usage of input tokens. When the value of input_tokens is set,

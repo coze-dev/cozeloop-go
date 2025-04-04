@@ -587,6 +587,13 @@ func (s *Span) SetModelNameBaggage(ctx context.Context, modelName string) {
 	s.SetBaggage(ctx, oneBaggage(trace.ModelName, modelName))
 }
 
+func (s *Span) SetModelCallOptions(ctx context.Context, callOptions interface{}) {
+	if s == nil {
+		return
+	}
+	s.SetTags(ctx, oneTag(trace.CallOptions, callOptions))
+}
+
 func (s *Span) SetInputTokens(ctx context.Context, inputTokens int) {
 	if s == nil {
 		return

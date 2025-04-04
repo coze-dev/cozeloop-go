@@ -15,25 +15,26 @@ var DefaultNoopSpan = &noopSpan{}
 type noopSpan struct{}
 
 // implement of commonSpanSetter
-func (n noopSpan) SetInput(ctx context.Context, input interface{})                     {}
-func (n noopSpan) SetOutput(ctx context.Context, output interface{})                   {}
-func (n noopSpan) SetError(ctx context.Context, err string)                            {}
-func (n noopSpan) SetStatusCode(ctx context.Context, code int)                         {}
-func (n noopSpan) SetUserID(ctx context.Context, userID string)                        {}
-func (n noopSpan) SetUserIDBaggage(ctx context.Context, userID string)                 {}
-func (n noopSpan) SetMessageID(ctx context.Context, messageID string)                  {}
-func (n noopSpan) SetMessageIDBaggage(ctx context.Context, messageID string)           {}
-func (n noopSpan) SetThreadID(ctx context.Context, threadID string)                    {}
-func (n noopSpan) SetThreadIDBaggage(ctx context.Context, threadID string)             {}
-func (n noopSpan) SetPrompt(ctx context.Context, prompt entity.Prompt)                 {}
-func (n noopSpan) SetPromptBaggage(ctx context.Context, prompt entity.Prompt)          {}
-func (n noopSpan) SetModelProvider(ctx context.Context, modelProvider string)          {}
-func (n noopSpan) SetModelProviderBaggage(ctx context.Context, modelProvider string)   {}
-func (n noopSpan) SetModelName(ctx context.Context, modelName string)                  {}
-func (n noopSpan) SetModelNameBaggage(ctx context.Context, modelName string)           {}
-func (n noopSpan) SetInputTokens(ctx context.Context, inputTokens int)                 {}
-func (n noopSpan) SetOutputTokens(ctx context.Context, outputTokens int)               {}
-func (n noopSpan) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64) {}
+func (n noopSpan) SetInput(ctx context.Context, input interface{})                       {}
+func (n noopSpan) SetOutput(ctx context.Context, output interface{})                     {}
+func (n noopSpan) SetError(ctx context.Context, err string)                              {}
+func (n noopSpan) SetStatusCode(ctx context.Context, code int)                           {}
+func (n noopSpan) SetUserID(ctx context.Context, userID string)                          {}
+func (n noopSpan) SetUserIDBaggage(ctx context.Context, userID string)                   {}
+func (n noopSpan) SetMessageID(ctx context.Context, messageID string)                    {}
+func (n noopSpan) SetMessageIDBaggage(ctx context.Context, messageID string)             {}
+func (n noopSpan) SetThreadID(ctx context.Context, threadID string)                      {}
+func (n noopSpan) SetThreadIDBaggage(ctx context.Context, threadID string)               {}
+func (n noopSpan) SetPrompt(ctx context.Context, prompt entity.Prompt)                   {}
+func (n noopSpan) SetPromptBaggage(ctx context.Context, prompt entity.Prompt)            {}
+func (n noopSpan) SetModelProvider(ctx context.Context, modelProvider string)            {}
+func (n noopSpan) SetModelProviderBaggage(ctx context.Context, modelProvider string)     {}
+func (n noopSpan) SetModelName(ctx context.Context, modelName string)                    {}
+func (n noopSpan) SetModelNameBaggage(ctx context.Context, modelName string)             {}
+func (n noopSpan) SetModelCallOptions(ctx context.Context, modelCallOptsion interface{}) {}
+func (n noopSpan) SetInputTokens(ctx context.Context, inputTokens int)                   {}
+func (n noopSpan) SetOutputTokens(ctx context.Context, outputTokens int)                 {}
+func (n noopSpan) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64)   {}
 
 // implement of Span
 func (n noopSpan) SetTags(ctx context.Context, tagKVs map[string]interface{})     {}
