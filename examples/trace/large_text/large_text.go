@@ -15,7 +15,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -34,12 +34,12 @@ func main() {
 
 	// 0. new client span
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient(
+	client, err := cozeloop.NewClient(
 		// To support ultra-large report, it is mandatory to set WithUltraLargeTraceReport(true)
-		loop.WithUltraLargeTraceReport(true),
+		cozeloop.WithUltraLargeTraceReport(true),
 		// upload file timeout. If you have enabled ultra-large report or file report, large text or files will be
 		// converted into files for upload. You can adjust this parameter, with the default being 30 seconds.
-		loop.WithUploadTimeout(30*time.Second),
+		cozeloop.WithUploadTimeout(30*time.Second),
 	)
 	if err != nil {
 		panic(err)

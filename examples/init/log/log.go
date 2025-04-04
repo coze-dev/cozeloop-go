@@ -20,15 +20,15 @@ func main() {
 	ctx := context.Background()
 
 	// You can change log level. Default log level is LogLevelWarn.
-	loop.SetLogLevel(loop.LogLevelDebug)
+	cozeloop.SetLogLevel(cozeloop.LogLevelDebug)
 	// You can also use you own logger for loop sdk.
-	loop.SetLogger(&CustomLogger{})
+	cozeloop.SetLogger(&CustomLogger{})
 
-	ctx, span := loop.StartSpan(ctx, "your span name", "custom")
+	ctx, span := cozeloop.StartSpan(ctx, "your span name", "custom")
 	span.Finish(ctx)
 
 	// Remember to close the client when program exits. If client is not closed, traces may be lost.
-	loop.Close(ctx)
+	cozeloop.Close(ctx)
 }
 
 type CustomLogger struct {

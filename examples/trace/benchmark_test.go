@@ -16,12 +16,12 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 func BenchmarkMyFunctionWithQPS(b *testing.B) {
 	logger.SetLogLevel(logger.LogLevelDebug)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}

@@ -17,7 +17,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -32,11 +32,11 @@ func main() {
 
 	// 0. new client span
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient(
+	client, err := cozeloop.NewClient(
 		// upload file timeout. If you have enabled ultra-large report or multi-modality report, large text or
 		// multi-modality files will be converted into files for upload. You can adjust this parameter, with the
 		// default being 30 seconds.
-		loop.WithUploadTimeout(30 * time.Second),
+		cozeloop.WithUploadTimeout(30 * time.Second),
 	)
 	if err != nil {
 		panic(err)

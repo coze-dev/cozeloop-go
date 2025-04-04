@@ -29,10 +29,10 @@ func main() {
 	// COZELOOP_WORKSPACE_ID=your workspace id
 	// COZELOOP_API_TOKEN=your token
 	// 2.New loop client
-	client, err := loop.NewClient(
+	client, err := cozeloop.NewClient(
 		// Set whether to report a trace span when get or format prompt.
 		// Default value is false.
-		loop.WithPromptTrace(true))
+		cozeloop.WithPromptTrace(true))
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func main() {
 	ctx, span := llmRunner.client.StartSpan(ctx, "root_span", "main_span", nil)
 
 	// 3.Get the prompt
-	prompt, err := llmRunner.client.GetPrompt(ctx, loop.GetPromptParam{
+	prompt, err := llmRunner.client.GetPrompt(ctx, cozeloop.GetPromptParam{
 		PromptKey: "test_demo",
 		// If version is not specified, the latest version of the corresponding prompt will be obtained
 		Version: "0.0.1",
@@ -122,7 +122,7 @@ func main() {
 }
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (err error) {

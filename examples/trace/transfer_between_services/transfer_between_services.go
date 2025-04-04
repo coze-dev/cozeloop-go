@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -30,7 +30,7 @@ func main() {
 
 	// 0. new client rootSpan
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -176,9 +176,9 @@ func (r *llmRunner) invokeServiceB(reqHeader map[string]string) {
 	ctx := context.Background()
 
 	// 1. start rootSpan of service B,
-	spanContext := loop.GetSpanFromHeader(ctx, reqHeader)
-	ctx, rootSpan := r.client.StartSpan(ctx, "root_span_serviceB", "main_span", []loop.StartSpanOption{
-		loop.WithChildOf(spanContext),
+	spanContext := cozeloop.GetSpanFromHeader(ctx, reqHeader)
+	ctx, rootSpan := r.client.StartSpan(ctx, "root_span_serviceB", "main_span", []cozeloop.StartSpanOption{
+		cozeloop.WithChildOf(spanContext),
 	}...)
 	defer rootSpan.Finish(ctx)
 

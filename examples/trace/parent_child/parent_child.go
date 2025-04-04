@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -28,7 +28,7 @@ func main() {
 
 	// 0. new client rootSpan
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -166,11 +166,11 @@ func (transport *MyTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	return transport.DefaultTransport.RoundTrip(req)
 }
 
-func (r *llmRunner) asyncRending(spanContext loop.SpanContext) {
+func (r *llmRunner) asyncRending(spanContext cozeloop.SpanContext) {
 	ctx := context.Background()
 	// asynSpan is child of rootSpan by WithChildOf
-	ctx, asynSpan := r.client.StartSpan(ctx, "asynRending", "rending", []loop.StartSpanOption{
-		loop.WithChildOf(spanContext),
+	ctx, asynSpan := r.client.StartSpan(ctx, "asynRending", "rending", []cozeloop.StartSpanOption{
+		cozeloop.WithChildOf(spanContext),
 	}...)
 	defer asynSpan.Finish(ctx)
 

@@ -1,10 +1,10 @@
 
-# Loop Go SDK
+# CozeLoop Go SDK
 [English](README.md) | 简体中文
 
 ## 概述
 
-Loop SDK 是一个用于与 [CozeLoop 平台](https://loop.coze.cn) 进行交互的 Go 客户端。
+CozeLoop SDK 是一个用于与 [扣子罗盘平台](https://loop.coze.cn) 进行交互的 Go 客户端。
 主要功能：
 - Trace上报
 - Prompt拉取
@@ -20,7 +20,7 @@ Loop SDK 是一个用于与 [CozeLoop 平台](https://loop.coze.cn) 进行交互
 
 ### 初始化
 
-首先，访问 https://www.coze.cn/open/oauth/apps 并创建一个 OAuth 应用，
+首先，访问 https://loop.coze.cn/console/enterprise/personal/open/oauth/apps 并创建一个 OAuth 应用，
 获取应用所有者的 AppID、公钥和私钥。
 
 设置环境变量

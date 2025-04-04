@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -28,7 +28,7 @@ func main() {
 
 	// 0. new client span
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}

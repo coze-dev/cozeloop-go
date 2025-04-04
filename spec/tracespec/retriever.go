@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package trace
+package tracespec
 
 type RetrieverInput struct {
 	Query string `json:"query,omitempty"`
