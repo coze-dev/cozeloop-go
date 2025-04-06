@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package trace
+package tracespec
 
 type Runtime struct {
 	Language string `json:"language"`          // from enum VLang in span_value.go

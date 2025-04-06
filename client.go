@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package loop
+package cozeloop
 
 import (
 	"context"
@@ -33,15 +33,15 @@ type Client interface {
 	// TraceClient interface of trace client
 	TraceClient
 
-	// GetWorkSpaceID return workspace id
+	// GetWorkspaceID return workspace id
 	GetWorkspaceID() string
-	// Close close the client. Should be called before program exit.
+	// Close Close the client. Should be called before program exit.
 	Close(ctx context.Context)
 }
 
 type Option func(o *options)
 
-// HttpClient interface of HttpClient, can use http.DefaultClient
+// HttpClient Interface of HttpClient, can use http.DefaultClient
 type HttpClient = httpclient.HTTPClient
 
 type options struct {

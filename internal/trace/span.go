@@ -477,11 +477,11 @@ func getModelOutputBytesSize(mContent trace.ModelOutput) int64 {
 	return int64(len(mContentJson))
 }
 
-func (s *Span) SetError(ctx context.Context, err string) {
+func (s *Span) SetError(ctx context.Context, err error) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.Error, err))
+	s.SetTags(ctx, oneTag(trace.Error, err.Error()))
 }
 
 func (s *Span) SetStatusCode(ctx context.Context, code int) {
@@ -547,30 +547,11 @@ func (s *Span) SetPrompt(ctx context.Context, prompt entity.Prompt) {
 	}
 }
 
-func (s *Span) SetPromptBaggage(ctx context.Context, prompt entity.Prompt) {
-	if s == nil {
-		return
-	}
-	if len(prompt.PromptKey) > 0 {
-		s.SetBaggage(ctx, oneBaggage(trace.PromptKey, prompt.PromptKey))
-		if len(prompt.Version) > 0 {
-			s.SetBaggage(ctx, oneBaggage(trace.PromptVersion, prompt.Version))
-		}
-	}
-}
-
 func (s *Span) SetModelProvider(ctx context.Context, modelProvider string) {
 	if s == nil {
 		return
 	}
 	s.SetTags(ctx, oneTag(trace.ModelProvider, modelProvider))
-}
-
-func (s *Span) SetModelProviderBaggage(ctx context.Context, modelProvider string) {
-	if s == nil {
-		return
-	}
-	s.SetBaggage(ctx, oneBaggage(trace.ModelProvider, modelProvider))
 }
 
 func (s *Span) SetModelName(ctx context.Context, modelName string) {
@@ -580,11 +561,11 @@ func (s *Span) SetModelName(ctx context.Context, modelName string) {
 	s.SetTags(ctx, oneTag(trace.ModelName, modelName))
 }
 
-func (s *Span) SetModelNameBaggage(ctx context.Context, modelName string) {
+func (s *Span) SetModelCallOptions(ctx context.Context, callOptions interface{}) {
 	if s == nil {
 		return
 	}
-	s.SetBaggage(ctx, oneBaggage(trace.ModelName, modelName))
+	s.SetTags(ctx, oneTag(trace.CallOptions, callOptions))
 }
 
 func (s *Span) SetInputTokens(ctx context.Context, inputTokens int) {

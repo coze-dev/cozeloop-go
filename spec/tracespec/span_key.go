@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package trace
+package tracespec
 
 // Tags for model-type span.
 const (
@@ -23,7 +23,7 @@ const (
 
 // Tags for prompt-type span.
 const (
-	PromptProvider = "prompt_provider" // Prompt providers, such as Loop, Langsmith, etc.
+	PromptProvider = "prompt_provider" // Prompt providers, such as CozeLoop, Langsmith, etc.
 	PromptKey      = "prompt_key"
 	PromptVersion  = "prompt_version"
 )

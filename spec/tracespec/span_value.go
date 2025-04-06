@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package trace
+package tracespec
 
 // SpanType tag builtin values
 const (

@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -28,7 +28,7 @@ func main() {
 
 	// 0. new client rootSpan
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeLLMCall)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	// 3. Assuming need run an async task, and it's span is child span of rootSpan
@@ -166,11 +166,11 @@ func (transport *MyTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	return transport.DefaultTransport.RoundTrip(req)
 }
 
-func (r *llmRunner) asyncRending(spanContext loop.SpanContext) {
+func (r *llmRunner) asyncRending(spanContext cozeloop.SpanContext) {
 	ctx := context.Background()
 	// asynSpan is child of rootSpan by WithChildOf
-	ctx, asynSpan := r.client.StartSpan(ctx, "asynRending", "rending", []loop.StartSpanOption{
-		loop.WithChildOf(spanContext),
+	ctx, asynSpan := r.client.StartSpan(ctx, "asynRending", "rending", []cozeloop.StartSpanOption{
+		cozeloop.WithChildOf(spanContext),
 	}...)
 	defer asynSpan.Finish(ctx)
 

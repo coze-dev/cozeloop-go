@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -30,7 +30,7 @@ func main() {
 
 	// 0. new client rootSpan
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +63,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeLLMCall)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	header, err := rootSpan.ToHeader()
@@ -71,7 +71,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeInternal)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	// 3. Assuming invoke another service, need to pass span header to another service for linking trace
@@ -176,9 +176,9 @@ func (r *llmRunner) invokeServiceB(reqHeader map[string]string) {
 	ctx := context.Background()
 
 	// 1. start rootSpan of service B,
-	spanContext := loop.GetSpanFromHeader(ctx, reqHeader)
-	ctx, rootSpan := r.client.StartSpan(ctx, "root_span_serviceB", "main_span", []loop.StartSpanOption{
-		loop.WithChildOf(spanContext),
+	spanContext := cozeloop.GetSpanFromHeader(ctx, reqHeader)
+	ctx, rootSpan := r.client.StartSpan(ctx, "root_span_serviceB", "main_span", []cozeloop.StartSpanOption{
+		cozeloop.WithChildOf(spanContext),
 	}...)
 	defer rootSpan.Finish(ctx)
 

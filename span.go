@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package loop
+package cozeloop
 
 import (
 	"context"
@@ -37,20 +37,22 @@ type Span interface {
 type commonSpanSetter interface {
 	// SetInput key: `input`
 	// Input information. The input will be serialized into a JSON string.
-	// The recommended standard format is ModelInput of attribute package, but custom fields can also be used.
+	// You can find recommended specification in https://github.com/coze-dev/cozeloop-go/tree/main/spec/tracespec
+	// Or you can use any struct you like.
 	SetInput(ctx context.Context, input interface{})
 
 	// SetOutput key: `output`
 	// Output information. The output will be serialized into a JSON string.
-	// The recommended standard format is ModelOutput of attribute package, but custom fields can also be used.
+	// You can find recommended specification in https://github.com/coze-dev/cozeloop-go/tree/main/spec/tracespec
+	// Or you can use any struct you like.
 	SetOutput(ctx context.Context, output interface{})
 
 	// SetError key: `error`
-	// Err message.
-	SetError(ctx context.Context, err string)
+	// Set error message.
+	SetError(ctx context.Context, err error)
 
-	// SetStatusCode key: `_status_code`
-	// Status code. A non-zero code is considered an exception.
+	// SetStatusCode key: `status_code`
+	// Set status code. A non-zero code is considered an exception.
 	SetStatusCode(ctx context.Context, code int)
 
 	// SetUserID key: `user_id`
@@ -72,19 +74,20 @@ type commonSpanSetter interface {
 	// SetPrompt key: `prompt
 	// Associated with PromptKey and PromptVersion, it will write two tags: prompt_key and prompt_version.
 	// SetPrompt is used to set the PromptKey and PromptVersion to tag.
-	// SetPromptBaggage is used to set the PromptKey and PromptVersion to Baggage.
 	SetPrompt(ctx context.Context, prompt entity.Prompt)
-	SetPromptBaggage(ctx context.Context, prompt entity.Prompt)
 
 	// SetModelProvider key: `model_provider`
 	// The provider of the LLM, such as OpenAI, etc.
 	SetModelProvider(ctx context.Context, modelProvider string)
-	SetModelProviderBaggage(ctx context.Context, modelProvider string)
 
 	// SetModelName key: `model_name`
 	// The Name of the LLM model, such as: gpt-4-1106-preview.
 	SetModelName(ctx context.Context, modelName string)
-	SetModelNameBaggage(ctx context.Context, modelName string)
+
+	// SetModelCallOptions key: `call_options`
+	// The call options of the LLM, such as temperature, max_tokens, etc.
+	// The recommended standard format is CallOption of spec package
+	SetModelCallOptions(ctx context.Context, callOptions interface{})
 
 	// SetInputTokens key: `input_tokens`
 	// The usage of input tokens. When the value of input_tokens is set,

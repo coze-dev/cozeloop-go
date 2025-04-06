@@ -14,7 +14,7 @@ import (
 )
 
 type llmRunner struct {
-	client loop.Client
+	client cozeloop.Client
 }
 
 const (
@@ -28,7 +28,7 @@ func main() {
 
 	// 0. new client span
 	logger.SetLogLevel(logger.LogLevelInfo)
-	client, err := loop.NewClient()
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 		// set tag key: `_status_code`
 		span.SetStatusCode(ctx, errCodeLLMCall)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		span.SetError(ctx, err.Error())
+		span.SetError(ctx, err)
 	}
 
 	// 3. span finish

@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
-package trace
+package tracespec
 
 // PromptInput is the input of prompt span, for tag key: input
 type PromptInput struct {

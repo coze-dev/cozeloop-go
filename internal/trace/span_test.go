@@ -5,6 +5,7 @@ package trace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -174,8 +175,8 @@ func Test_SpanSpecialTag(t *testing.T) {
 		span.SetInput(ctx, "llm input") // just text
 		span.SetOutput(ctx, "llm output")
 
-		span.SetError(ctx, "my err") // done
-		span.SetStatusCode(ctx, 0)   // done
+		span.SetError(ctx, errors.New("my err")) // done
+		span.SetStatusCode(ctx, 0)               // done
 
 		span.SetUserID(ctx, "123456")        // done
 		span.SetUserIDBaggage(ctx, "123456") // done
@@ -253,7 +254,7 @@ func Test_SpanSpecialTag(t *testing.T) {
 		span.SetOutput(ctx, "llm output")
 		So(span.GetTagMap()[consts.Output], ShouldEqual, "llm output")
 
-		span.SetError(ctx, "my err") // done
+		span.SetError(ctx, errors.New("my err")) // done
 		So(span.GetTagMap()[consts.Error], ShouldEqual, "my err")
 
 		span.SetStatusCode(ctx, 0) // done
