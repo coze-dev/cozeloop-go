@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go"
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 type llmRunner struct {
@@ -88,7 +88,7 @@ func main() {
 }
 
 func (r *llmRunner) llmCall(ctx context.Context) (err error) {
-	ctx, span := r.client.StartSpan(ctx, "llmCall", trace.VModelSpanType, nil)
+	ctx, span := r.client.StartSpan(ctx, "llmCall", tracespec.VModelSpanType, nil)
 	defer span.Finish(ctx)
 
 	// llm is processing
@@ -192,11 +192,11 @@ func (transport *MyTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	return transport.DefaultTransport.RoundTrip(req)
 }
 
-func getMultiModalityInput(imageBase64Str string) (*trace.ModelInput, error) {
-	return &trace.ModelInput{ // multi-modality input，must be ModelInput of attribute package
-		Messages: []*trace.ModelMessage{
+func getMultiModalityInput(imageBase64Str string) (*tracespec.ModelInput, error) {
+	return &tracespec.ModelInput{ // multi-modality input，must be ModelInput of attribute package
+		Messages: []*tracespec.ModelMessage{
 			{
-				Parts: []*trace.ModelMessagePart{
+				Parts: []*tracespec.ModelMessagePart{
 					{
 						Type:     "text",
 						Text:     "这个图片是什么",
@@ -204,9 +204,9 @@ func getMultiModalityInput(imageBase64Str string) (*trace.ModelInput, error) {
 						FileURL:  nil,
 					},
 					{
-						Type: trace.ModelMessagePartTypeImage,
+						Type: tracespec.ModelMessagePartTypeImage,
 						Text: "",
-						ImageURL: &trace.ModelImageURL{
+						ImageURL: &tracespec.ModelImageURL{
 							Name: "test image binary",
 							// support MDN Base64 data image / file, or valid URL.
 							URL:    imageBase64Str,

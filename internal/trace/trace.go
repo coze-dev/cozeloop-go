@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 type Provider struct {
@@ -121,7 +121,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 
 	systemTagMap := make(map[string]interface{})
 	if options.Scene != "" {
-		systemTagMap[trace.Runtime_] = trace.Runtime{
+		systemTagMap[tracespec.Runtime_] = tracespec.Runtime{
 			Scene: options.Scene,
 		}
 	}

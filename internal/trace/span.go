@@ -15,12 +15,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 const (
@@ -251,16 +251,16 @@ func (s *Span) SetInput(ctx context.Context, input interface{}) {
 		return
 	}
 
-	messageParts := make([]*trace.ModelMessagePart, 0)
-	mContent := trace.ModelInput{}
+	messageParts := make([]*tracespec.ModelMessagePart, 0)
+	mContent := tracespec.ModelInput{}
 
-	if tempContent, ok := input.(trace.ModelInput); ok {
+	if tempContent, ok := input.(tracespec.ModelInput); ok {
 		mContent = tempContent
 		for _, message := range tempContent.Messages {
 			messageParts = append(messageParts, message.Parts...)
 		}
 	}
-	if tempContent, ok := input.(*trace.ModelInput); ok {
+	if tempContent, ok := input.(*tracespec.ModelInput); ok {
 		mContent = *tempContent
 		for _, message := range tempContent.Messages {
 			messageParts = append(messageParts, message.Parts...)
@@ -269,39 +269,39 @@ func (s *Span) SetInput(ctx context.Context, input interface{}) {
 
 	isMultiModality := parseModelMessageParts(messageParts)
 	if isMultiModality {
-		s.SetMultiModalityMap(trace.Input)
+		s.SetMultiModalityMap(tracespec.Input)
 		size := getModelInputBytesSize(deepCopyMessageOfModelInput(mContent))
 		s.lock.Lock()
 		s.bytesSize += size
 		s.lock.Unlock()
 	}
 
-	s.SetTags(ctx, oneTag(trace.Input, input))
+	s.SetTags(ctx, oneTag(tracespec.Input, input))
 }
 
-func deepCopyMessageOfModelInput(src trace.ModelInput) trace.ModelInput {
-	result := trace.ModelInput{}
-	result.Messages = make([]*trace.ModelMessage, len(src.Messages))
+func deepCopyMessageOfModelInput(src tracespec.ModelInput) tracespec.ModelInput {
+	result := tracespec.ModelInput{}
+	result.Messages = make([]*tracespec.ModelMessage, len(src.Messages))
 	for i, message := range src.Messages {
-		result.Messages[i] = &trace.ModelMessage{
-			Parts: make([]*trace.ModelMessagePart, len(message.Parts)),
+		result.Messages[i] = &tracespec.ModelMessage{
+			Parts: make([]*tracespec.ModelMessagePart, len(message.Parts)),
 		}
 		for j, part := range message.Parts {
-			tempPart := &trace.ModelMessagePart{
+			tempPart := &tracespec.ModelMessagePart{
 				Type:     part.Type,
 				Text:     part.Text,
 				ImageURL: part.ImageURL,
 				FileURL:  part.FileURL,
 			}
 			if part.ImageURL != nil {
-				tempPart.ImageURL = &trace.ModelImageURL{
+				tempPart.ImageURL = &tracespec.ModelImageURL{
 					Name:   part.ImageURL.Name,
 					URL:    part.ImageURL.URL,
 					Detail: part.ImageURL.Detail,
 				}
 			}
 			if part.FileURL != nil {
-				tempPart.FileURL = &trace.ModelFileURL{
+				tempPart.FileURL = &tracespec.ModelFileURL{
 					Name:   part.FileURL.Name,
 					URL:    part.FileURL.URL,
 					Detail: part.FileURL.Detail,
@@ -318,7 +318,7 @@ func deepCopyMessageOfModelInput(src trace.ModelInput) trace.ModelInput {
 	return result
 }
 
-func getModelInputBytesSize(mContent trace.ModelInput) int64 {
+func getModelInputBytesSize(mContent tracespec.ModelInput) int64 {
 	for _, message := range mContent.Messages {
 		if message == nil {
 			continue
@@ -328,11 +328,11 @@ func getModelInputBytesSize(mContent trace.ModelInput) int64 {
 				continue
 			}
 			switch part.Type {
-			case trace.ModelMessagePartTypeImage:
+			case tracespec.ModelMessagePartTypeImage:
 				if part.ImageURL != nil && part.ImageURL.URL != "" {
 					part.ImageURL.URL = ""
 				}
-			case trace.ModelMessagePartTypeFile:
+			case tracespec.ModelMessagePartTypeFile:
 				if part.FileURL != nil && part.FileURL.URL != "" {
 					part.FileURL.URL = ""
 				}
@@ -347,10 +347,10 @@ func getModelInputBytesSize(mContent trace.ModelInput) int64 {
 	return int64(len(mContentJson))
 }
 
-func parseModelMessageParts(mContents []*trace.ModelMessagePart) (isMultiModality bool) {
+func parseModelMessageParts(mContents []*tracespec.ModelMessagePart) (isMultiModality bool) {
 	for _, content := range mContents {
 		switch content.Type {
-		case trace.ModelMessagePartTypeImage:
+		case tracespec.ModelMessagePartTypeImage:
 			if content.ImageURL != nil && content.ImageURL.URL != "" {
 				if base64Data, isBase64 := util.ParseValidMDNBase64(content.ImageURL.URL); isBase64 {
 					content.ImageURL.URL = base64Data
@@ -360,7 +360,7 @@ func parseModelMessageParts(mContents []*trace.ModelMessagePart) (isMultiModalit
 					isMultiModality = true
 				}
 			}
-		case trace.ModelMessagePartTypeFile:
+		case tracespec.ModelMessagePartTypeFile:
 			if content.FileURL != nil && content.FileURL.URL != "" {
 				if base64Data, isBase64 := util.ParseValidMDNBase64(content.FileURL.URL); isBase64 {
 					content.FileURL.URL = base64Data
@@ -380,9 +380,9 @@ func (s *Span) SetOutput(ctx context.Context, output interface{}) {
 	if s == nil {
 		return
 	}
-	mContent := trace.ModelOutput{}
-	messageParts := make([]*trace.ModelMessagePart, 0)
-	if mContents, ok := output.(trace.ModelOutput); ok {
+	mContent := tracespec.ModelOutput{}
+	messageParts := make([]*tracespec.ModelMessagePart, 0)
+	if mContents, ok := output.(tracespec.ModelOutput); ok {
 		mContent = mContents
 		for _, choice := range mContents.Choices {
 			if choice.Message != nil {
@@ -390,7 +390,7 @@ func (s *Span) SetOutput(ctx context.Context, output interface{}) {
 			}
 		}
 	}
-	if mContents, ok := output.(*trace.ModelOutput); ok {
+	if mContents, ok := output.(*tracespec.ModelOutput); ok {
 		mContent = *mContents
 		for _, choice := range mContents.Choices {
 			if choice.Message != nil {
@@ -401,39 +401,39 @@ func (s *Span) SetOutput(ctx context.Context, output interface{}) {
 
 	isMultiModality := parseModelMessageParts(messageParts)
 	if isMultiModality {
-		s.SetMultiModalityMap(trace.Output)
+		s.SetMultiModalityMap(tracespec.Output)
 		size := getModelOutputBytesSize(deepCopyMessageOfModelOutput(mContent))
 		s.lock.Lock()
 		s.bytesSize += size
 		s.lock.Unlock()
 	}
 
-	s.SetTags(ctx, oneTag(trace.Output, output))
+	s.SetTags(ctx, oneTag(tracespec.Output, output))
 }
 
-func deepCopyMessageOfModelOutput(src trace.ModelOutput) trace.ModelOutput {
-	result := trace.ModelOutput{}
-	result.Choices = make([]*trace.ModelChoice, len(src.Choices))
+func deepCopyMessageOfModelOutput(src tracespec.ModelOutput) tracespec.ModelOutput {
+	result := tracespec.ModelOutput{}
+	result.Choices = make([]*tracespec.ModelChoice, len(src.Choices))
 	for i, choice := range src.Choices {
-		result.Choices[i] = &trace.ModelChoice{
-			Message: &trace.ModelMessage{
-				Parts: make([]*trace.ModelMessagePart, len(choice.Message.Parts)),
+		result.Choices[i] = &tracespec.ModelChoice{
+			Message: &tracespec.ModelMessage{
+				Parts: make([]*tracespec.ModelMessagePart, len(choice.Message.Parts)),
 			},
 		}
 		for j, part := range choice.Message.Parts {
-			tempPart := &trace.ModelMessagePart{
+			tempPart := &tracespec.ModelMessagePart{
 				Type: part.Type,
 				Text: part.Text,
 			}
 			if part.ImageURL != nil {
-				tempPart.ImageURL = &trace.ModelImageURL{
+				tempPart.ImageURL = &tracespec.ModelImageURL{
 					Name:   part.ImageURL.Name,
 					URL:    part.ImageURL.URL,
 					Detail: part.ImageURL.Detail,
 				}
 			}
 			if part.FileURL != nil {
-				tempPart.FileURL = &trace.ModelFileURL{
+				tempPart.FileURL = &tracespec.ModelFileURL{
 					Name:   part.FileURL.Name,
 					URL:    part.FileURL.URL,
 					Detail: part.FileURL.Detail,
@@ -447,7 +447,7 @@ func deepCopyMessageOfModelOutput(src trace.ModelOutput) trace.ModelOutput {
 	return result
 }
 
-func getModelOutputBytesSize(mContent trace.ModelOutput) int64 {
+func getModelOutputBytesSize(mContent tracespec.ModelOutput) int64 {
 	for _, choice := range mContent.Choices {
 		if choice.Message == nil {
 			continue
@@ -457,11 +457,11 @@ func getModelOutputBytesSize(mContent trace.ModelOutput) int64 {
 				continue
 			}
 			switch part.Type {
-			case trace.ModelMessagePartTypeImage:
+			case tracespec.ModelMessagePartTypeImage:
 				if part.ImageURL != nil && part.ImageURL.URL != "" {
 					part.ImageURL.URL = ""
 				}
-			case trace.ModelMessagePartTypeFile:
+			case tracespec.ModelMessagePartTypeFile:
 				if part.FileURL != nil && part.FileURL.URL != "" {
 					part.FileURL.URL = ""
 				}
@@ -481,7 +481,7 @@ func (s *Span) SetError(ctx context.Context, err error) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.Error, err.Error()))
+	s.SetTags(ctx, oneTag(tracespec.Error, err.Error()))
 }
 
 func (s *Span) SetStatusCode(ctx context.Context, code int) {
@@ -540,9 +540,9 @@ func (s *Span) SetPrompt(ctx context.Context, prompt entity.Prompt) {
 		return
 	}
 	if len(prompt.PromptKey) > 0 {
-		s.SetTags(ctx, oneTag(trace.PromptKey, prompt.PromptKey))
+		s.SetTags(ctx, oneTag(tracespec.PromptKey, prompt.PromptKey))
 		if len(prompt.Version) > 0 {
-			s.SetTags(ctx, oneTag(trace.PromptVersion, prompt.Version))
+			s.SetTags(ctx, oneTag(tracespec.PromptVersion, prompt.Version))
 		}
 	}
 }
@@ -551,35 +551,35 @@ func (s *Span) SetModelProvider(ctx context.Context, modelProvider string) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.ModelProvider, modelProvider))
+	s.SetTags(ctx, oneTag(tracespec.ModelProvider, modelProvider))
 }
 
 func (s *Span) SetModelName(ctx context.Context, modelName string) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.ModelName, modelName))
+	s.SetTags(ctx, oneTag(tracespec.ModelName, modelName))
 }
 
 func (s *Span) SetModelCallOptions(ctx context.Context, callOptions interface{}) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.CallOptions, callOptions))
+	s.SetTags(ctx, oneTag(tracespec.CallOptions, callOptions))
 }
 
 func (s *Span) SetInputTokens(ctx context.Context, inputTokens int) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.InputTokens, inputTokens))
+	s.SetTags(ctx, oneTag(tracespec.InputTokens, inputTokens))
 }
 
 func (s *Span) SetOutputTokens(ctx context.Context, outputTokens int) {
 	if s == nil {
 		return
 	}
-	s.SetTags(ctx, oneTag(trace.OutputTokens, outputTokens))
+	s.SetTags(ctx, oneTag(tracespec.OutputTokens, outputTokens))
 }
 
 func (s *Span) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64) {
@@ -611,7 +611,7 @@ func (s *Span) SetTags(ctx context.Context, tagKVs map[string]interface{}) {
 func (s *Span) addDefaultTag(ctx context.Context, tagKVs map[string]interface{}) {
 	for key := range tagKVs {
 		switch key {
-		case trace.Error:
+		case tracespec.Error:
 			if s.StatusCode == 0 {
 				s.StatusCode = int32(consts.StatusCodeErrorDefault)
 			}
@@ -794,22 +794,22 @@ func (s *Span) setSystemTag(ctx context.Context) {
 		s.SystemTagMap = make(map[string]interface{})
 	}
 
-	runtime := trace.Runtime{}
-	runtimeObj, ok := s.SystemTagMap[trace.Runtime_]
+	runtime := tracespec.Runtime{}
+	runtimeObj, ok := s.SystemTagMap[tracespec.Runtime_]
 	if ok {
-		if temp, ok := runtimeObj.(trace.Runtime); ok {
+		if temp, ok := runtimeObj.(tracespec.Runtime); ok {
 			runtime = temp
 		}
 	}
 
-	runtime.Language = trace.VLangGo
+	runtime.Language = tracespec.VLangGo
 	if runtime.Scene == "" {
-		runtime.Scene = trace.VSceneCustom
+		runtime.Scene = tracespec.VSceneCustom
 	}
 	runtime.LoopSDKVersion = internal.Version()
 
 	s.lock.Lock()
-	s.SystemTagMap[trace.Runtime_] = util.ToJSON(runtime)
+	s.SystemTagMap[tracespec.Runtime_] = util.ToJSON(runtime)
 	s.lock.Unlock()
 }
 
@@ -821,11 +821,11 @@ func (s *Span) setStatInfo(ctx context.Context) {
 		s.SetTags(ctx, map[string]interface{}{consts.LatencyFirstResp: util.GetValueOfInt(tempV) - s.GetStartTime().UnixMicro()})
 	}
 
-	inputTokens, inputTokensExist := tagMap[trace.InputTokens]
-	outputTokens, outputTokensExist := tagMap[trace.OutputTokens]
+	inputTokens, inputTokensExist := tagMap[tracespec.InputTokens]
+	outputTokens, outputTokensExist := tagMap[tracespec.OutputTokens]
 	if inputTokensExist || outputTokensExist {
 		// tokens = input_tokens+output_tokens
-		s.SetTags(ctx, map[string]interface{}{trace.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
+		s.SetTags(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
 	}
 
 	// Duration = now - start_time, unit: microseconds

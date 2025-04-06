@@ -11,13 +11,13 @@ import (
 
 	"github.com/valyala/fasttemplate"
 
-	attribute "github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 	"github.com/coze-dev/cozeloop-go/internal/trace"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 type Provider struct {
@@ -60,24 +60,24 @@ func (p *Provider) GetPrompt(ctx context.Context, param GetPromptParam, options 
 	if p.config.PromptTrace && p.traceProvider != nil {
 		var promptHubSpan *trace.Span
 		var spanErr error
-		ctx, promptHubSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptHubSpanName, attribute.VPromptHubSpanType,
-			trace.StartSpanOptions{Scene: attribute.VScenePromptHub})
+		ctx, promptHubSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptHubSpanName, tracespec.VPromptHubSpanType,
+			trace.StartSpanOptions{Scene: tracespec.VScenePromptHub})
 		if spanErr != nil {
 			logger.CtxWarnf(ctx, "start prompt hub span failed: %v", err)
 		}
 		defer func() {
 			if promptHubSpan != nil {
 				promptHubSpan.SetTags(ctx, map[string]any{
-					attribute.PromptKey: param.PromptKey,
-					attribute.Input: util.ToJSON(map[string]any{
-						attribute.PromptKey:     param.PromptKey,
-						attribute.PromptVersion: param.Version,
+					tracespec.PromptKey: param.PromptKey,
+					tracespec.Input: util.ToJSON(map[string]any{
+						tracespec.PromptKey:     param.PromptKey,
+						tracespec.PromptVersion: param.Version,
 					}),
 				})
 				if prompt != nil {
 					promptHubSpan.SetTags(ctx, map[string]any{
-						attribute.PromptVersion: prompt.Version, // actual version
-						attribute.Output:        util.ToJSON(prompt),
+						tracespec.PromptVersion: prompt.Version, // actual version
+						tracespec.Output:        util.ToJSON(prompt),
 					})
 				}
 				if err != nil {
@@ -133,18 +133,18 @@ func (p *Provider) PromptFormat(ctx context.Context, prompt *entity.Prompt, vari
 	if p.config.PromptTrace && p.traceProvider != nil {
 		var promptTemplateSpan *trace.Span
 		var spanErr error
-		ctx, promptTemplateSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptTemplateSpanName, attribute.VPromptTemplateSpanType,
-			trace.StartSpanOptions{Scene: attribute.VScenePromptTemplate})
+		ctx, promptTemplateSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptTemplateSpanName, tracespec.VPromptTemplateSpanType,
+			trace.StartSpanOptions{Scene: tracespec.VScenePromptTemplate})
 		if spanErr != nil {
 			logger.CtxWarnf(ctx, "start prompt template span failed: %v", err)
 		}
 		defer func() {
 			if promptTemplateSpan != nil {
 				promptTemplateSpan.SetTags(ctx, map[string]any{
-					attribute.PromptKey:     prompt.PromptKey,
-					attribute.PromptVersion: prompt.Version,
-					attribute.Input:         util.ToJSON(toSpanPromptInput(prompt.PromptTemplate.Messages, variables)),
-					attribute.Output:        util.ToJSON(toSpanMessages(messages)),
+					tracespec.PromptKey:     prompt.PromptKey,
+					tracespec.PromptVersion: prompt.Version,
+					tracespec.Input:         util.ToJSON(toSpanPromptInput(prompt.PromptTemplate.Messages, variables)),
+					tracespec.Output:        util.ToJSON(toSpanMessages(messages)),
 				})
 				if err != nil {
 					promptTemplateSpan.SetStatusCode(ctx, util.GetErrorCode(err))

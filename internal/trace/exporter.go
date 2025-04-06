@@ -10,12 +10,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 	model2 "github.com/coze-dev/cozeloop-go/internal/trace/model"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 type Exporter interface {
@@ -116,8 +116,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadS
 			SpanName:         span.GetSpanName(),
 			SpanType:         span.GetSpanType(),
 			StatusCode:       span.GetStatusCode(),
-			Input:            putContentMap[trace.Input],
-			Output:           putContentMap[trace.Output],
+			Input:            putContentMap[tracespec.Input],
+			Output:           putContentMap[tracespec.Output],
 			ObjectStorage:    objectStorageByte,
 			SystemTagsString: systemTagStrM,
 			SystemTagsLong:   systemTagLongM,
@@ -140,7 +140,7 @@ func parseTag(spanTag map[string]interface{}) (map[string]string, map[string]int
 	vLongMap := make(map[string]int64)
 	vDoubleMap := make(map[string]float64)
 	for key, value := range spanTag {
-		if key == trace.Input || key == trace.Output {
+		if key == tracespec.Input || key == tracespec.Output {
 			continue
 		}
 		switch v := value.(type) {
@@ -180,10 +180,10 @@ func parseTag(spanTag map[string]interface{}) (map[string]string, map[string]int
 
 var (
 	tagValueConverterMap = map[string]*tagValueConverter{
-		trace.Input: {
+		tracespec.Input: {
 			convertFunc: convertInput,
 		},
-		trace.Output: {
+		tracespec.Output: {
 			convertFunc: convertOutput,
 		},
 	}
@@ -209,7 +209,7 @@ func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes str
 		}
 	} else {
 		// multi-modality input/output
-		modelInput := &trace.ModelInput{}
+		modelInput := &tracespec.ModelInput{}
 		if tempV, ok := value.(string); ok {
 			if err = json.Unmarshal([]byte(tempV), modelInput); err != nil {
 				logger.CtxErrorf(ctx, "unmarshal ModelInput failed, err: %v", err)
@@ -257,7 +257,7 @@ func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes st
 		uploadFile = append(uploadFile, f)
 	} else {
 		// multi-modality input/output
-		modelOutput := &trace.ModelOutput{}
+		modelOutput := &tracespec.ModelOutput{}
 		if tempV, ok := value.(string); ok {
 			if err = json.Unmarshal([]byte(tempV), modelOutput); err != nil {
 				logger.CtxErrorf(ctx, "unmarshal ModelInput failed, err: %v", err)
@@ -328,9 +328,9 @@ func transferObjectStorage(spanUploadFile []*UploadFile) (string, error) {
 		isExist = true
 		switch file.UploadType {
 		case model2.UploadTypeLong:
-			if file.TagKey == trace.Input {
+			if file.TagKey == tracespec.Input {
 				objectStorage.InputTosKey = file.TosKey
-			} else if file.TagKey == trace.Output {
+			} else if file.TagKey == tracespec.Output {
 				objectStorage.OutputTosKey = file.TosKey
 			}
 		case model2.UploadTypeMultiModality:
@@ -353,21 +353,21 @@ func transferObjectStorage(spanUploadFile []*UploadFile) (string, error) {
 	return string(objectStorageByte), nil
 }
 
-func transferMessagePart(src *trace.ModelMessagePart, span *Span, tagKey string) (uploadFiles []*UploadFile) {
+func transferMessagePart(src *tracespec.ModelMessagePart, span *Span, tagKey string) (uploadFiles []*UploadFile) {
 	if src == nil || span == nil {
 		return nil
 	}
 
 	switch src.Type {
-	case trace.ModelMessagePartTypeImage:
+	case tracespec.ModelMessagePartTypeImage:
 		if f := transferImage(src.ImageURL, span, tagKey); f != nil {
 			uploadFiles = append(uploadFiles, f)
 		}
-	case trace.ModelMessagePartTypeFile:
+	case tracespec.ModelMessagePartTypeFile:
 		if f := transferFile(src.FileURL, span, tagKey); f != nil {
 			uploadFiles = append(uploadFiles, f)
 		}
-	case trace.ModelMessagePartTypeText:
+	case tracespec.ModelMessagePartTypeText:
 		return
 	default:
 		return
@@ -401,7 +401,7 @@ func transferText(src string, span *Span, tagKey string) (string, *UploadFile) {
 	return src, nil
 }
 
-func transferImage(src *trace.ModelImageURL, span *Span, tagKey string) *UploadFile {
+func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *UploadFile {
 	if src == nil || span == nil {
 		return nil
 	}
@@ -424,7 +424,7 @@ func transferImage(src *trace.ModelImageURL, span *Span, tagKey string) *UploadF
 	}
 }
 
-func transferFile(src *trace.ModelFileURL, span *Span, tagKey string) *UploadFile {
+func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *UploadFile {
 	if src == nil || span == nil {
 		return nil
 	}
