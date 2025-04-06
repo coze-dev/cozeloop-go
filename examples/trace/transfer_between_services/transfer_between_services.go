@@ -63,7 +63,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeLLMCall)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	header, err := rootSpan.ToHeader()
@@ -71,7 +71,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeInternal)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	// 3. Assuming invoke another service, need to pass span header to another service for linking trace

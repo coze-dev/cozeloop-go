@@ -68,7 +68,7 @@ func main() {
 	// assuming call llm
 	if err = llmRunner.llmCall(ctx); err != nil {
 		span.SetStatusCode(ctx, errCodeLLMCall)
-		span.SetError(ctx, err.Error())
+		span.SetError(ctx, err)
 	}
 
 	// 3. span finish
@@ -153,7 +153,7 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 		// set tag key: `_status_code`
 		span.SetStatusCode(ctx, errCodeInternal)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		span.SetError(ctx, err.Error())
+		span.SetError(ctx, err)
 		return
 	}
 	span.SetInput(ctx, traceInput)

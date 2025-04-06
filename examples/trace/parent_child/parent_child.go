@@ -61,7 +61,7 @@ func main() {
 		// set tag key: `_status_code`
 		rootSpan.SetStatusCode(ctx, errCodeLLMCall)
 		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		rootSpan.SetError(ctx, err.Error())
+		rootSpan.SetError(ctx, err)
 	}
 
 	// 3. Assuming need run an async task, and it's span is child span of rootSpan

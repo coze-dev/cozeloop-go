@@ -82,7 +82,7 @@ func (p *Provider) GetPrompt(ctx context.Context, param GetPromptParam, options 
 				}
 				if err != nil {
 					promptHubSpan.SetStatusCode(ctx, util.GetErrorCode(err))
-					promptHubSpan.SetError(ctx, err.Error())
+					promptHubSpan.SetError(ctx, err)
 				}
 				promptHubSpan.Finish(ctx)
 			}
@@ -148,7 +148,7 @@ func (p *Provider) PromptFormat(ctx context.Context, prompt *entity.Prompt, vari
 				})
 				if err != nil {
 					promptTemplateSpan.SetStatusCode(ctx, util.GetErrorCode(err))
-					promptTemplateSpan.SetError(ctx, err.Error())
+					promptTemplateSpan.SetError(ctx, err)
 				}
 				promptTemplateSpan.Finish(ctx)
 			}

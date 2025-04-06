@@ -4,8 +4,6 @@
 package cozeloop
 
 import (
-	"time"
-
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 )
 
@@ -20,9 +18,4 @@ const (
 
 	// ComBaseURL = consts.ComBaseURL
 	CnBaseURL = consts.CnBaseURL
-
-	// default values for loop client
-	DefaultPromptCacheMaxCount        = 100
-	DefaultPromptCacheRefreshInterval = 10 * time.Minute
-	DefaultHttpClientTimeout          = 300 * time.Second
 )
