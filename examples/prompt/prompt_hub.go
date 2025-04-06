@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go"
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 func main() {
@@ -126,7 +126,7 @@ type llmRunner struct {
 }
 
 func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (err error) {
-	ctx, span := r.client.StartSpan(ctx, "llmCall", trace.VModelSpanType, nil)
+	ctx, span := r.client.StartSpan(ctx, "llmCall", tracespec.VModelSpanType, nil)
 	defer span.Finish(ctx)
 
 	// llm is processing

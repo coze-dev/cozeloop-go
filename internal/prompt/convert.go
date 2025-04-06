@@ -4,9 +4,9 @@
 package prompt
 
 import (
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 // toModelPrompt converts openapi.Prompt to entity.Prompt
@@ -182,17 +182,17 @@ func toModelToolChoiceType(tct ToolChoiceType) entity.ToolChoiceType {
 }
 
 // ===============to span model================
-func toSpanPromptInput(messages []*entity.Message, arguments map[string]any) *trace.PromptInput {
-	return &trace.PromptInput{
+func toSpanPromptInput(messages []*entity.Message, arguments map[string]any) *tracespec.PromptInput {
+	return &tracespec.PromptInput{
 		Templates: toSpanMessages(messages),
 		Arguments: toSpanArguments(arguments),
 	}
 }
 
-func toSpanArguments(arguments map[string]any) []*trace.PromptArgument {
-	var result []*trace.PromptArgument
+func toSpanArguments(arguments map[string]any) []*tracespec.PromptArgument {
+	var result []*tracespec.PromptArgument
 	for key, value := range arguments {
-		result = append(result, &trace.PromptArgument{
+		result = append(result, &tracespec.PromptArgument{
 			Key:   key,
 			Value: value,
 		})
@@ -200,19 +200,19 @@ func toSpanArguments(arguments map[string]any) []*trace.PromptArgument {
 	return result
 }
 
-func toSpanMessages(messages []*entity.Message) []*trace.ModelMessage {
-	var result []*trace.ModelMessage
+func toSpanMessages(messages []*entity.Message) []*tracespec.ModelMessage {
+	var result []*tracespec.ModelMessage
 	for _, msg := range messages {
 		result = append(result, toSpanMessage(msg))
 	}
 	return result
 }
 
-func toSpanMessage(message *entity.Message) *trace.ModelMessage {
+func toSpanMessage(message *entity.Message) *tracespec.ModelMessage {
 	if message == nil {
 		return nil
 	}
-	return &trace.ModelMessage{
+	return &tracespec.ModelMessage{
 		Role:    string(message.Role),
 		Content: util.PtrValue(message.Content),
 	}

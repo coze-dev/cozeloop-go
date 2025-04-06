@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go"
-	"github.com/coze-dev/cozeloop-go/attribute/trace"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 )
 
@@ -72,7 +71,7 @@ func monitorResources() {
 }
 
 func (r *llmRunner) llmRunner(ctx context.Context, input interface{}) (err error) {
-	ctx, span := r.client.StartSpan(ctx, "llmCall", trace.VModelSpanType, nil)
+	ctx, span := r.client.StartSpan(ctx, "llmCall", tracespec.tracespce.VModelSpanType, nil)
 	defer span.Finish(ctx)
 
 	// Assuming llm is processing
