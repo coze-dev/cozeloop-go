@@ -42,6 +42,7 @@ const (
 	VSceneCustom         = "custom"          // user custom, it has the same meaning as blank.
 	VScenePromptHub      = "prompt_hub"      // get_prompt
 	VScenePromptTemplate = "prompt_template" // prompt_template
+	VSceneIntegration    = "integration"
 )
 
 // Tag values for prompt input.
