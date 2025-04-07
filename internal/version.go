@@ -5,5 +5,5 @@ package internal
 
 // Version returns the version of the loop package.
 func Version() string {
-	return "v0.1.2"
+	return "v0.1.0"
 }
