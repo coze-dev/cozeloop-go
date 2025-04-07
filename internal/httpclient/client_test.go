@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"testing"
 
+	. "github.com/bytedance/mockey"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	. "github.com/smartystreets/goconvey/convey"
 )

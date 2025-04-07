@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
-
+	. "github.com/bytedance/mockey"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/trace"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewPromptProvider(t *testing.T) {

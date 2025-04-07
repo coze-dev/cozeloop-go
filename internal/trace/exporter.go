@@ -48,7 +48,6 @@ func (e *SpanExporter) ExportFiles(ctx context.Context, files []*UploadFile) err
 			continue
 		}
 		logger.CtxDebugf(ctx, "uploadFile start, file name: %s", file.Name)
-		//time.Sleep(3 * time.Second) // todo: 调试打印，上线前删除
 		resp := httpclient.BaseResponse{}
 		err := e.client.UploadFile(ctx, pathUploadFile, file.TosKey, bytes.NewReader([]byte(file.Data)), map[string]string{"workspace_id": file.SpaceID}, &resp)
 		if err != nil {
@@ -70,7 +69,6 @@ func (e *SpanExporter) ExportSpans(ctx context.Context, ss []*UploadSpan) (err e
 		return
 	}
 	logger.CtxDebugf(ctx, "export spans, spans count: %d", len(ss))
-	//time.Sleep(300 * time.Millisecond) // todo: 调试打印，上线前删除
 
 	resp := httpclient.BaseResponse{}
 	err = e.client.Post(ctx, pathIngestTrace, UploadSpanData{ss}, &resp)

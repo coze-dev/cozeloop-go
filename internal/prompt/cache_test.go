@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
-
+	. "github.com/bytedance/mockey"
 	"github.com/coze-dev/cozeloop-go/entity"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestPromptCache(t *testing.T) {

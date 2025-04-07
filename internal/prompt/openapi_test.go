@@ -9,9 +9,9 @@ import (
 	"errors"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-
+	. "github.com/bytedance/mockey"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestOpenAPIClient_MPullPrompt(t *testing.T) {

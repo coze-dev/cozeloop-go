@@ -13,9 +13,11 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/bytedance/mockey"
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -147,14 +149,14 @@ func Test_Finish(t *testing.T) {
 	PatchConvey("Test Finish success", t, func() {
 		s.isFinished = 0
 		s.SetTags(ctx, map[string]interface{}{
-			consts.StartTimeFirstResp:    time.Now().UnixMilli(),
-			consts.ReserveTagInputTokens: 101,
+			consts.StartTimeFirstResp: time.Now().UnixMilli(),
+			tracespec.InputTokens:     101,
 		})
 		Mock(GetMethod(s.spanProcessor, "OnSpanEnd")).Return().Build()
 		s.Finish(ctx)
 		So(s.Duration, ShouldBeGreaterThan, 0)
 		So(s.GetTagMap()[consts.LatencyFirstResp], ShouldBeGreaterThan, 0)
-		So(s.GetTagMap()[consts.ReserveTagTotalTokens], ShouldEqual, 101)
+		So(s.GetTagMap()[tracespec.Tokens], ShouldEqual, 101)
 	})
 }
 
@@ -187,14 +189,11 @@ func Test_SpanSpecialTag(t *testing.T) {
 		span.SetThreadID(ctx, "11111111")        // done
 		span.SetThreadIDBaggage(ctx, "11111111") // done
 
-		span.SetPrompt(ctx, entity.Prompt{})        // done
-		span.SetPromptBaggage(ctx, entity.Prompt{}) // done
+		span.SetPrompt(ctx, entity.Prompt{}) // done
 
-		span.SetModelProvider(ctx, "openai")        // done
-		span.SetModelProviderBaggage(ctx, "openai") // done
+		span.SetModelProvider(ctx, "openai") // done
 
-		span.SetModelName(ctx, "gpt-4-1106-preview")        // done
-		span.SetModelNameBaggage(ctx, "gpt-4-1106-preview") // done
+		span.SetModelName(ctx, "gpt-4-1106-preview") // done
 
 		span.SetInputTokens(ctx, 232) // done
 
@@ -209,14 +208,14 @@ func Test_SpanSpecialTag(t *testing.T) {
 		span := s
 
 		span.SetInput(ctx, "llm input") // just text
-		So(span.GetTagMap()[consts.Input], ShouldEqual, "llm input")
+		So(span.GetTagMap()[tracespec.Input], ShouldEqual, "llm input")
 
 		imageBase64Str, err := getImageBytes("https://www.w3schools.com/w3images/lights.jpg")
 		So(err, ShouldBeNil)
-		span.SetInput(ctx, entity.ModelInput{ // multi-modality input
-			Messages: []*entity.ModelMessage{
+		span.SetInput(ctx, tracespec.ModelInput{ // multi-modality input
+			Messages: []*tracespec.ModelMessage{
 				{
-					Parts: []*entity.ModelMessagePart{
+					Parts: []*tracespec.ModelMessagePart{
 						{
 							Type:     "text",
 							Text:     "test txt",
@@ -226,7 +225,7 @@ func Test_SpanSpecialTag(t *testing.T) {
 						{
 							Type: "image",
 							Text: "",
-							ImageURL: &entity.ModelImageURL{
+							ImageURL: &tracespec.ModelImageURL{
 								Name:   "test image url",
 								URL:    "https://www.w3schools.com/w3images/lights.jpg", // valid image URL
 								Detail: "",
@@ -236,7 +235,7 @@ func Test_SpanSpecialTag(t *testing.T) {
 						{
 							Type: "image",
 							Text: "",
-							ImageURL: &entity.ModelImageURL{
+							ImageURL: &tracespec.ModelImageURL{
 								Name:   "test image binary",
 								URL:    imageBase64Str, // image binary only support Base64 of JPEG、PNG、WebP
 								Detail: "",
@@ -249,13 +248,13 @@ func Test_SpanSpecialTag(t *testing.T) {
 			Tools:           nil,
 			ModelToolChoice: nil,
 		})
-		So(span.GetTagMap()[consts.Input], ShouldNotBeNil)
+		So(span.GetTagMap()[tracespec.Input], ShouldNotBeNil)
 
 		span.SetOutput(ctx, "llm output")
-		So(span.GetTagMap()[consts.Output], ShouldEqual, "llm output")
+		So(span.GetTagMap()[tracespec.Output], ShouldEqual, "llm output")
 
 		span.SetError(ctx, errors.New("my err")) // done
-		So(span.GetTagMap()[consts.Error], ShouldEqual, "my err")
+		So(span.GetTagMap()[tracespec.Error], ShouldEqual, "my err")
 
 		span.SetStatusCode(ctx, 0) // done
 		So(span.StatusCode, ShouldEqual, 0)
@@ -269,14 +268,11 @@ func Test_SpanSpecialTag(t *testing.T) {
 		span.SetThreadID(ctx, "11111111")        // done
 		span.SetThreadIDBaggage(ctx, "11111111") // done
 
-		span.SetPrompt(ctx, entity.Prompt{PromptKey: "test.test.test", Version: "v1"})        // done
-		span.SetPromptBaggage(ctx, entity.Prompt{PromptKey: "test.test.test", Version: "v1"}) // done
+		span.SetPrompt(ctx, entity.Prompt{PromptKey: "test.test.test", Version: "v1"}) // done
 
-		span.SetModelProvider(ctx, "openai")        // done
-		span.SetModelProviderBaggage(ctx, "openai") // done
+		span.SetModelProvider(ctx, "openai") // done
 
-		span.SetModelName(ctx, "gpt-4-1106-preview")        // done
-		span.SetModelNameBaggage(ctx, "gpt-4-1106-preview") // done
+		span.SetModelName(ctx, "gpt-4-1106-preview") // done
 
 		span.SetInputTokens(ctx, 232) // done
 

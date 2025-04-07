@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 var DefaultNoopSpan = &noopSpan{}
@@ -32,6 +33,7 @@ func (n noopSpan) SetModelCallOptions(ctx context.Context, modelCallOptions inte
 func (n noopSpan) SetInputTokens(ctx context.Context, inputTokens int)                   {}
 func (n noopSpan) SetOutputTokens(ctx context.Context, outputTokens int)                 {}
 func (n noopSpan) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64)   {}
+func (n noopSpan) SetRuntime(ctx context.Context, runtime tracespec.Runtime)             {}
 
 // implement of Span
 func (n noopSpan) SetTags(ctx context.Context, tagKVs map[string]interface{})     {}

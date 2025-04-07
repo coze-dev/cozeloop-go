@@ -50,8 +50,8 @@ const (
 
 // On the basis of W3C, the "loop" prefix is added to avoid conflicts with other traces that use W3C.
 const (
-	TraceContextHeaderParent  = "X-Loop-Traceparent"
-	TraceContextHeaderBaggage = "X-Loop-Tracestate"
+	TraceContextHeaderParent  = "X-Cozeloop-Traceparent"
+	TraceContextHeaderBaggage = "X-Cozeloop-Tracestate"
 )
 
 const (

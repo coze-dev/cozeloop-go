@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 // Span is the interface for span.
@@ -104,6 +105,11 @@ type commonSpanSetter interface {
 	// When `start_time_first_resp` is set, a tag named `latency_first_resp` calculated
 	// based on the span's StartTime will be added, meaning the latency for the first packet.
 	SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64)
+
+	// SetRuntime key: `runtime`
+	// The runtime of the LLM, such as language, library, scene, etc.
+	// The recommended standard format is Runtime of spec package
+	SetRuntime(ctx context.Context, runtime tracespec.Runtime)
 }
 
 // SpanContext is the interface for span Baggage transfer.

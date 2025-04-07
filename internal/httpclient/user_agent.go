@@ -15,12 +15,12 @@ import (
 
 var (
 	version              = internal.Version()
-	userAgentSDK         = "loop-go"
+	userAgentSDK         = "cozeloop-go"
 	userAgentLang        = "go"
 	userAgentLangVersion = strings.TrimPrefix(runtime.Version(), "go")
 	userAgentOsName      = runtime.GOOS
 	userAgentOsVersion   = os.Getenv("OSVERSION")
-	scene                = "loop"
+	scene                = "cozeloop"
 	source               = "openapi"
 	userAgent            = userAgentSDK + "/" + version + " " + userAgentLang + "/" + userAgentLangVersion + " " + userAgentOsName + "/" + userAgentOsVersion
 	clientUserAgent      string

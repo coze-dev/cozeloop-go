@@ -877,3 +877,15 @@ func (s *Span) toHeaderBaggage() (string, error) {
 func (s *Span) toHeaderParent() string {
 	return fmt.Sprintf("%02x-%s-%s-%02x", consts.GlobalTraceVersion, s.TraceID, s.SpanID, s.flags)
 }
+
+func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
+	if s == nil {
+		return
+	}
+	if s.SystemTagMap == nil {
+		s.SystemTagMap = make(map[string]interface{})
+	}
+	s.lock.Lock()
+	s.SystemTagMap[tracespec.Runtime_] = runtime
+	s.lock.Unlock()
+}
