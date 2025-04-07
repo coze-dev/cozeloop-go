@@ -13,6 +13,7 @@ import (
 
 	"github.com/coze-dev/cozeloop-go"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
+	"github.com/coze-dev/cozeloop-go/internal/util"
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
@@ -95,7 +96,7 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 	//baseURL := "https://xxx"
 	//ak := "****"
 	modelName := "gpt-4o-2024-05-13"
-	//maxTokens := 1000 // range: [0, 4096]
+	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{
 	//	DefaultTransport: &http.Transport{},
 	//}
@@ -112,7 +113,14 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 	//resp, err := client.CreateChatCompletion(
 	//	ctx,
 	//	openai.ChatCompletionRequest{
-	//		Model: modelName,
+	//		Model:            modelName,
+	//		Messages:         chatCompletionMessage,
+	//		MaxTokens:        maxTokens,
+	//		TopP:             0.95,
+	//		N:                1,
+	//		PresencePenalty:  1.0,
+	//		FrequencyPenalty: 1.0,
+	//		Temperature:      0.6,
 	//		Messages: []openai.ChatCompletionMessage{
 	//			{
 	//				Role: "user",
@@ -142,20 +150,13 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 	// mock resp
 	time.Sleep(1 * time.Second)
 	respChoices := []string{
-		"上海天气晴朗，气温25摄氏度。",
+		"这是一张极光的图片。",
 	}
 	respPromptTokens := 11
 	respCompletionTokens := 52
 
 	// set tag key: `input`
-	traceInput, err := getMultiModalityInput(imageBase64Str)
-	if err != nil {
-		// set tag key: `_status_code`
-		span.SetStatusCode(ctx, errCodeInternal)
-		// set tag key: `error`, if `_status_code` value is not defined, `_status_code` value will be set -1.
-		span.SetError(ctx, err)
-		return
-	}
+	traceInput, _ := getMultiModalityInput(imageBase64Str)
 	span.SetInput(ctx, traceInput)
 	// set tag key: `output`
 	span.SetOutput(ctx, respChoices)
@@ -174,6 +175,16 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 	span.SetOutputTokens(ctx, respCompletionTokens)
 	// set tag key: `model_name`, e.g., gpt-4-1106-preview, etc.
 	span.SetModelName(ctx, modelName)
+	span.SetTags(ctx, map[string]interface{}{
+		tracespec.CallOptions: tracespec.ModelCallOption{
+			Temperature:      0.6,
+			MaxTokens:        int64(maxTokens),
+			TopP:             0.95,
+			N:                1,
+			PresencePenalty:  util.Ptr(float32(1.0)),
+			FrequencyPenalty: util.Ptr(float32(1.0)),
+		},
+	})
 
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/coze-dev/cozeloop-go"
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/internal/util"
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
@@ -41,7 +42,7 @@ func main() {
 		client: client,
 	}
 
-	// 1. start span
+	// 1. start root span
 	ctx, span := llmRunner.client.StartSpan(ctx, "root_span", "main_span", nil)
 
 	// 3.Get the prompt
@@ -133,7 +134,7 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	//baseURL := "https://xxx"
 	//ak := "****"
 	modelName := "gpt-4o-2024-05-13"
-	//maxTokens := 1000 // range: [0, 4096]
+	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{
 	//	DefaultTransport: &http.Transport{},
 	//}
@@ -154,9 +155,14 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	//resp, err := client.CreateChatCompletion(
 	//	ctx,
 	//	openai.ChatCompletionRequest{
-	//		Model:     modelName,
-	//		Messages:  chatCompletionMessage,
-	//		MaxTokens: maxTokens,
+	//		Model:            modelName,
+	//		Messages:         chatCompletionMessage,
+	//		MaxTokens:        maxTokens,
+	//		TopP:             0.95,
+	//		N:                1,
+	//		PresencePenalty:  1.0,
+	//		FrequencyPenalty: 1.0,
+	//		Temperature:      0.6,
 	//	},
 	//)
 
@@ -169,7 +175,7 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	respCompletionTokens := 52
 
 	// set tag key: `input`
-	span.SetInput(ctx, messages)
+	span.SetInput(ctx, convertModelInput(messages))
 	// set tag key: `output`
 	span.SetOutput(ctx, respChoices)
 	// set tag key: `model_provider`, e.g., openai, etc.
@@ -187,6 +193,16 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	span.SetOutputTokens(ctx, respCompletionTokens)
 	// set tag key: `model_name`, e.g., gpt-4-1106-preview, etc.
 	span.SetModelName(ctx, modelName)
+	span.SetTags(ctx, map[string]interface{}{
+		tracespec.CallOptions: tracespec.ModelCallOption{
+			Temperature:      0.6,
+			MaxTokens:        int64(maxTokens),
+			TopP:             0.95,
+			N:                1,
+			PresencePenalty:  util.Ptr(float32(1.0)),
+			FrequencyPenalty: util.Ptr(float32(1.0)),
+		},
+	})
 
 	return nil
 }
@@ -203,4 +219,18 @@ func (transport *MyTransport) RoundTrip(req *http.Request) (*http.Response, erro
 		}
 	}
 	return transport.DefaultTransport.RoundTrip(req)
+}
+
+func convertModelInput(messages []*entity.Message) *tracespec.ModelInput {
+	modelMessages := make([]*tracespec.ModelMessage, 0)
+	for _, message := range messages {
+		modelMessages = append(modelMessages, &tracespec.ModelMessage{
+			Role:    string(message.Role),
+			Content: util.PtrValue(message.Content),
+		})
+	}
+
+	return &tracespec.ModelInput{
+		Messages: modelMessages,
+	}
 }

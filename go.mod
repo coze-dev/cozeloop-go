@@ -21,6 +21,4 @@ require (
 	golang.org/x/sys v0.26.0 // indirect
 )
 
-replace (
-	github.com/coze-dev/cozeloop-go/spec => ./spec
-)
+replace github.com/coze-dev/cozeloop-go/spec => ./spec
