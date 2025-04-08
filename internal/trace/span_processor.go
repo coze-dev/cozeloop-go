@@ -30,7 +30,7 @@ const (
 	DefaultScheduleDelay          = 1000 // millisecond
 
 	MaxFileQueueLength         = 512
-	MaxFileExportBatchLength   = 5
+	MaxFileExportBatchLength   = 1
 	MaxFileExportBatchByteSize = 100 * 1024 * 1024 // 100MB
 	FileScheduleDelay          = 5000              // millisecond
 )
