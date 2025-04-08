@@ -47,7 +47,7 @@ func main() {
 
 	// 3.Get the prompt
 	prompt, err := llmRunner.client.GetPrompt(ctx, cozeloop.GetPromptParam{
-		PromptKey: "test_demo",
+		PromptKey: "prompt_hub_demo",
 		// If version is not specified, the latest version of the corresponding prompt will be obtained
 		Version: "0.0.1",
 	})
