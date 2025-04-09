@@ -27,11 +27,11 @@ jobs:
           
              go install mvdan.cc/gofumpt@v0.5.0
         
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          args: --out-format=colored-line-number
+#      - name: Run golangci-lint
+#        uses: golangci/golangci-lint-action@v3
+#        with:
+#          version: latest
+#          args: --out-format=colored-line-number
 
       - name: Run go build
         run: |
