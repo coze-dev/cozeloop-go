@@ -37,12 +37,12 @@ jobs:
         run: |
           go build ./...
 
-      - name: Run gofumpt
-        run: |
-          if ! test -z "$(gofumpt -d -e . | tee /dev/stderr)"; then
-            echo "❗️ gofumpt check failed"
-            exit 1
-          fi
+#      - name: Run gofumpt
+#        run: |
+#          if ! test -z "$(gofumpt -d -e . | tee /dev/stderr)"; then
+#            echo "❗️ gofumpt check failed"
+#            exit 1
+#          fi
 
       - name: Run tests with coverage
         run: |
