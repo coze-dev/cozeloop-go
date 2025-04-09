@@ -58,7 +58,7 @@ func BenchmarkMyFunctionWithQPS(b *testing.B) {
 
 	// run benchmark test
 	b.ResetTimer()
-	time.Sleep(1000 * time.Second) // wait
+	time.Sleep(1 * time.Second) // run duration
 	close(done)
 }
 

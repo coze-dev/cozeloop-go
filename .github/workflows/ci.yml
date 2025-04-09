@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.18', '1.19', '1.20', '1.21', '1.22' , '1.23']
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+          
+      - name: Install dependencies
+        run: go mod download
+          
+             go install mvdan.cc/gofumpt@v0.5.0
+        
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --out-format=colored-line-number
+
+      - name: Run go build
+        run: |
+          go build ./...
+
+      - name: Run gofumpt
+        run: |
+          if ! test -z "$(gofumpt -d -e . | tee /dev/stderr)"; then
+            echo "❗️ gofumpt check failed"
+            exit 1
+          fi
+
+      - name: Run tests with coverage
+        run: |
+          go test -race -coverprofile=coverage.out $(go list ./... | grep -v /examples/)
+          go tool cover -func=coverage.out
+          
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          THRESHOLD=70
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "Code coverage $COVERAGE% is below threshold of $THRESHOLD%"
+            exit 1
+          fi
+          echo "Code coverage $COVERAGE% is above threshold of $THRESHOLD%"
+        
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+  test_success:
+    # this aggregates success state of all jobs listed in `needs`
+    # this is the only required check to pass CI
+    name: "Test success"
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    steps:
+      - name: "Success"
+        if: needs.test.result == 'success'
+        run: true
+        shell: bash
+      - name: "Failure"
+        if: needs.test.result != 'success'
+        run: false
+        shell: bash
+
+  draft:
+    runs-on: ubuntu-latest
+    needs: test_success
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: release-drafter/release-drafter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
