@@ -95,7 +95,9 @@ func (b *BatchQueueManager) processQueue() {
 		case <-b.stopCh:
 			return
 		case <-b.timer.C:
-			logger.CtxDebugf(ctx, "%s time out, span length: %d, queue length: %d", b.o.queueName, len(b.batch), len(b.queue))
+			if len(b.batch) > 0 {
+				logger.CtxDebugf(ctx, "%s time out, span length: %d, queue length: %d", b.o.queueName, len(b.batch), len(b.queue))
+			}
 			b.doExport(ctx)
 		case sd := <-b.queue:
 			if ffs, ok := sd.(forceFlushSpan); ok {
@@ -164,7 +166,7 @@ func (b *BatchQueueManager) doExport(ctx context.Context) {
 	b.batchMutex.Lock()
 	defer b.batchMutex.Unlock()
 
-	logger.CtxDebugf(ctx, "%s batch length before export: %d", b.o.queueName, len(b.batch)) // todo： delete
+	//logger.CtxDebugf(ctx, "%s batch length before export: %d", b.o.queueName, len(b.batch))
 	if len(b.batch) > 0 {
 		if b.exportFunc != nil {
 			b.exportFunc(ctx, b.batch)
