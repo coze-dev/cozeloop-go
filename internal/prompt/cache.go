@@ -34,6 +34,7 @@ type PromptCache struct {
 type CacheOption struct {
 	EnableAsyncUpdate bool          // Whether to enable asynchronous updates
 	UpdateInterval    time.Duration // Update interval, if 0, use default value
+	MaxCacheSize      int
 }
 
 type Option func(*CacheOption)
@@ -54,11 +55,21 @@ func withUpdateInterval(interval time.Duration) Option {
 	}
 }
 
+// withMaxCacheSize set max cache size
+func withMaxCacheSize(size int) Option {
+	return func(opt *CacheOption) {
+		if size > 0 {
+			opt.MaxCacheSize = size
+		}
+	}
+}
+
 func newPromptCache(workspaceID string, openAPI *OpenAPIClient, opts ...Option) *PromptCache {
 	// Default configuration
 	option := &CacheOption{
 		EnableAsyncUpdate: false,
 		UpdateInterval:    updateInterval,
+		MaxCacheSize:      defaultCacheSize,
 	}
 
 	// Apply custom configurations
@@ -68,7 +79,7 @@ func newPromptCache(workspaceID string, openAPI *OpenAPIClient, opts ...Option) 
 
 	cache := &PromptCache{
 		workspaceID: workspaceID,
-		cache:       gcache.New(defaultCacheSize).LFU().Build(),
+		cache:       gcache.New(option.MaxCacheSize).LFU().Build(),
 		openAPI:     openAPI,
 		stopChan:    make(chan struct{}),
 		option:      *option,
