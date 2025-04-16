@@ -64,3 +64,9 @@ func WithStartNewTrace() StartSpanOption {
 		ops.StartNewTrace = true
 	}
 }
+
+func WithWorkSpaceID(workSpaceID string) StartSpanOption {
+	return func(ops *startSpanOptions) {
+		ops.WorkSpaceID = workSpaceID
+	}
+}

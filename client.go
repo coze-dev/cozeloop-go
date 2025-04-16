@@ -61,6 +61,7 @@ type options struct {
 	promptCacheMaxCount        int
 	promptCacheRefreshInterval time.Duration
 	promptTrace                bool
+	exporter                   trace.Exporter
 }
 
 func (o *options) MD5() string {
@@ -135,6 +136,7 @@ func NewClient(opts ...Option) (Client, error) {
 	c.traceProvider = trace.NewTraceProvider(httpClient, trace.Options{
 		WorkspaceID:      options.workspaceID,
 		UltraLargeReport: options.ultraLargeReport,
+		Exporter:         options.exporter,
 	})
 	c.promptProvider = prompt.NewPromptProvider(httpClient, c.traceProvider, prompt.Options{
 		WorkspaceID:                options.workspaceID,
@@ -236,6 +238,12 @@ func WithPromptCacheRefreshInterval(interval time.Duration) Option {
 func WithPromptTrace(enable bool) Option {
 	return func(p *options) {
 		p.promptTrace = enable
+	}
+}
+
+func WithExporter(e trace.Exporter) Option {
+	return func(p *options) {
+		p.exporter = e
 	}
 }
 
