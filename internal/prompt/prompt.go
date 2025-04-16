@@ -47,7 +47,10 @@ type PromptFormatOptions struct {
 
 func NewPromptProvider(httpClient *httpclient.Client, traceProvider *trace.Provider, options Options) *Provider {
 	openAPI := &OpenAPIClient{httpClient: httpClient}
-	cache := newPromptCache(options.WorkspaceID, openAPI, withAsyncUpdate(true), withUpdateInterval(options.PromptCacheRefreshInterval))
+	cache := newPromptCache(options.WorkspaceID, openAPI,
+		withAsyncUpdate(true),
+		withUpdateInterval(options.PromptCacheRefreshInterval),
+		withMaxCacheSize(options.PromptCacheMaxCount))
 	return &Provider{
 		openAPIClient: openAPI,
 		traceProvider: traceProvider,
