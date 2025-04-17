@@ -24,7 +24,7 @@ import (
 // Defaults for batchQueueManagerOptions.
 const (
 	DefaultMaxQueueLength         = 2048
-	DefaultMaxExportBatchLength   = 512
+	DefaultMaxExportBatchLength   = 100
 	DefaultMaxExportBatchByteSize = 4 * 1024 * 1024 // 4MB
 	MaxRetryExportBatchLength     = 50
 	DefaultScheduleDelay          = 1000 // millisecond

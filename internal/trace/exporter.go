@@ -109,7 +109,7 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadS
 			SpanID:           span.GetSpanID(),
 			ParentID:         span.GetParentID(),
 			TraceID:          span.GetTraceID(),
-			Duration:         span.GetDuration(),
+			DurationMicros:   span.GetDuration(),
 			WorkspaceID:      span.GetSpaceID(),
 			SpanName:         span.GetSpanName(),
 			SpanType:         span.GetSpanType(),
@@ -454,7 +454,7 @@ type UploadSpan struct {
 	SpanID           string             `json:"span_id"`
 	ParentID         string             `json:"parent_id"`
 	TraceID          string             `json:"trace_id"`
-	Duration         int64              `json:"duration"`
+	DurationMicros   int64              `json:"duration_micros"`
 	WorkspaceID      string             `json:"workspace_id"`
 	SpanName         string             `json:"span_name"`
 	SpanType         string             `json:"span_type"`
