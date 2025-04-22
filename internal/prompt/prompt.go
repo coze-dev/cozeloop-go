@@ -100,9 +100,9 @@ func (p *Provider) doGetPrompt(ctx context.Context, param GetPromptParam, option
 		prompt = prompt.DeepCopy()
 	}()
 	// Get from cache
-	//if cached, ok := p.cache.Get(param.PromptKey, param.Version); ok {
-	//	return cached, nil
-	//}
+	if cached, ok := p.cache.Get(param.PromptKey, param.Version); ok {
+		return cached, nil
+	}
 
 	// Cache miss, fetch from server
 	promptResults, err := p.openAPIClient.MPullPrompt(ctx, MPullPromptRequest{
@@ -124,7 +124,7 @@ func (p *Provider) doGetPrompt(ctx context.Context, param GetPromptParam, option
 
 	// Cache the result
 	result := toModelPrompt(promptResults[0].Prompt)
-	//p.cache.Set(promptResults[0].Query.PromptKey, promptResults[0].Query.Version, result)
+	p.cache.Set(promptResults[0].Query.PromptKey, promptResults[0].Query.Version, result)
 
 	return result, nil
 }
