@@ -109,7 +109,7 @@ func NewClient(opts ...Option) (Client, error) {
 	options.apiBaseURL = strings.TrimRight(strings.TrimSpace(options.apiBaseURL), "/")
 
 	if err := checkOptions(&options); err != nil {
-		return nil, err
+		return &NoopClient{newClientError: err}, err
 	}
 
 	cacheKey := options.MD5()
@@ -121,7 +121,7 @@ func NewClient(opts ...Option) (Client, error) {
 
 	auth, err := buildAuth(options)
 	if err != nil {
-		return nil, err
+		return &NoopClient{newClientError: err}, err
 	}
 
 	c := &loopClient{
@@ -347,7 +347,7 @@ func getDefaultClient() Client {
 		var err error
 		defaultClient, err = NewClient()
 		if err != nil {
-			defaultClient = &noopClient{newClientError: err}
+			defaultClient = &NoopClient{newClientError: err}
 		} else {
 			sigChan := make(chan os.Signal, 1)
 			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -358,7 +358,7 @@ func getDefaultClient() Client {
 
 				logger.CtxInfof(ctx, "Received signal: %v, starting graceful shutdown...", sig)
 				defaultClient.Close(ctx)
-				defaultClient = &noopClient{newClientError: consts.ErrClientClosed}
+				defaultClient = &NoopClient{newClientError: consts.ErrClientClosed}
 				logger.CtxInfof(ctx, "Graceful shutdown finished.")
 				os.Exit(0)
 			}()
