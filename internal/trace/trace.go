@@ -24,6 +24,7 @@ type Provider struct {
 type Options struct {
 	WorkspaceID      string
 	UltraLargeReport bool
+	Exporter         Exporter
 }
 
 type StartSpanOptions struct {
@@ -33,6 +34,7 @@ type StartSpanOptions struct {
 	Baggage       map[string]string
 	StartNewTrace bool
 	Scene         string
+	WorkSpaceID   string
 }
 
 type loopSpanKey struct{}
@@ -41,7 +43,7 @@ func NewTraceProvider(httpClient *httpclient.Client, options Options) *Provider 
 	c := &Provider{
 		httpClient:    httpClient,
 		opt:           &options,
-		spanProcessor: NewBatchSpanProcessor(httpClient),
+		spanProcessor: NewBatchSpanProcessor(options.Exporter, httpClient),
 	}
 	return c
 }
@@ -126,6 +128,11 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 		}
 	}
 
+	workSpaceID := t.opt.WorkspaceID
+	if options.WorkSpaceID != "" {
+		workSpaceID = options.WorkSpaceID
+	}
+
 	// 2. create span and init
 	s := &Span{
 		SpanContext: SpanContext{
@@ -135,7 +142,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 		},
 		SpanType:            spanType,
 		Name:                spanName,
-		WorkspaceID:         t.opt.WorkspaceID,
+		WorkspaceID:         workSpaceID,
 		ParentSpanID:        parentID,
 		StartTime:           startTime,
 		Duration:            0,
