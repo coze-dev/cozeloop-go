@@ -13,45 +13,45 @@ import (
 
 var defaultNoopSpan = trace.DefaultNoopSpan
 
-// noopClient a noop client
-type noopClient struct {
+// NoopClient a noop client
+type NoopClient struct {
 	newClientError error
 }
 
-func (c *noopClient) GetWorkspaceID() string {
+func (c *NoopClient) GetWorkspaceID() string {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return ""
 }
 
-func (c *noopClient) Close(ctx context.Context) {
+func (c *NoopClient) Close(ctx context.Context) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 }
 
-func (c *noopClient) GetPrompt(ctx context.Context, param GetPromptParam, options ...GetPromptOption) (*entity.Prompt, error) {
-	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
-	return nil, c.newClientError
-}
-
-func (c *noopClient) PromptFormat(ctx context.Context, prompt *entity.Prompt, variables map[string]any, options ...PromptFormatOption) (messages []*entity.Message, err error) {
+func (c *NoopClient) GetPrompt(ctx context.Context, param GetPromptParam, options ...GetPromptOption) (*entity.Prompt, error) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return nil, c.newClientError
 }
 
-func (c *noopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
+func (c *NoopClient) PromptFormat(ctx context.Context, prompt *entity.Prompt, variables map[string]any, options ...PromptFormatOption) (messages []*entity.Message, err error) {
+	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
+	return nil, c.newClientError
+}
+
+func (c *NoopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return ctx, defaultNoopSpan
 }
 
-func (c *noopClient) GetSpanFromContext(ctx context.Context) Span {
+func (c *NoopClient) GetSpanFromContext(ctx context.Context) Span {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return defaultNoopSpan
 }
 
-func (c *noopClient) GetSpanFromHeader(ctx context.Context, header map[string]string) SpanContext {
+func (c *NoopClient) GetSpanFromHeader(ctx context.Context, header map[string]string) SpanContext {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return defaultNoopSpan
 }
 
-func (c *noopClient) Flush(ctx context.Context) {
+func (c *NoopClient) Flush(ctx context.Context) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 }

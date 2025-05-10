@@ -43,8 +43,13 @@ type SpanProcessor interface {
 	ForceFlush(ctx context.Context) error
 }
 
-func NewBatchSpanProcessor(client *httpclient.Client) SpanProcessor {
-	exporter := &SpanExporter{client: client}
+func NewBatchSpanProcessor(ex Exporter, client *httpclient.Client) SpanProcessor {
+	var exporter Exporter
+	exporter = &SpanExporter{client: client}
+	if ex != nil {
+		exporter = ex
+	}
+
 	fileRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              "file retry",
