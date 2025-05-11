@@ -4,11 +4,12 @@
 package idgen
 
 import (
+	crand "crypto/rand"
+	"encoding/binary"
 	"math"
 	"math/rand"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 var (
@@ -55,7 +56,9 @@ func (m *multiDeltaIdGenerator) getIndex() uint64 {
 }
 
 func newAccumulateIdGenerator(reseedThreshold uint64, delta uint64) IDGenerator {
-	source := rand.NewSource(time.Now().UnixNano())
+	var randomSeed int64
+	_ = binary.Read(crand.Reader, binary.LittleEndian, &randomSeed)
+	source := rand.NewSource(randomSeed)
 	r := rand.New(source)
 	randFunc := func() uint64 {
 		return uint64(r.Int63n(int64(minUnit64(math.MaxInt64, reseedThreshold))))
