@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 )
@@ -182,9 +183,9 @@ func newExportSpansFunc(exporter Exporter, spanRetryQueue QueueManager, fileQueu
 
 func newExportFilesFunc(exporter Exporter, fileRetryQueue QueueManager) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
-		files := make([]*UploadFile, 0, len(l))
+		files := make([]*entity.UploadFile, 0, len(l))
 		for _, f := range l {
-			if file, ok := f.(*UploadFile); ok {
+			if file, ok := f.(*entity.UploadFile); ok {
 				files = append(files, file)
 			}
 		}

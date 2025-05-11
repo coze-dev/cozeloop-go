@@ -14,10 +14,3 @@ type Attachment struct {
 	Type   string `json:"type,omitempty"` // text, image, file
 	TosKey string `json:"tos_key,omitempty"`
 }
-
-type UploadType int64
-
-const (
-	UploadTypeLong          UploadType = 1
-	UploadTypeMultiModality UploadType = 2
-)

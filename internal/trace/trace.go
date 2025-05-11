@@ -34,7 +34,7 @@ type StartSpanOptions struct {
 	Baggage       map[string]string
 	StartNewTrace bool
 	Scene         string
-	WorkSpaceID   string
+	WorkspaceID   string
 }
 
 type loopSpanKey struct{}
@@ -129,8 +129,8 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 	}
 
 	workSpaceID := t.opt.WorkspaceID
-	if options.WorkSpaceID != "" {
-		workSpaceID = options.WorkSpaceID
+	if options.WorkspaceID != "" {
+		workSpaceID = options.WorkspaceID
 	}
 
 	// 2. create span and init
