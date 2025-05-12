@@ -102,8 +102,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadS
 
 		resFile = append(resFile, spanUploadFile...)
 
-		tagStrM, tagLongM, tagDoubleM := parseTag(span.TagMap)
-		systemTagStrM, systemTagLongM, systemTagDoubleM := parseTag(span.SystemTagMap)
+		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.TagMap, false)
+		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
 		resSpan = append(resSpan, &UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
 			SpanID:           span.GetSpanID(),
@@ -123,25 +123,33 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadS
 			TagsString:       tagStrM,
 			TagsLong:         tagLongM,
 			TagsDouble:       tagDoubleM,
+			TagsBool:         tagBoolM,
 		})
 	}
 
 	return resSpan, resFile
 }
 
-func parseTag(spanTag map[string]interface{}) (map[string]string, map[string]int64, map[string]float64) {
+func parseTag(spanTag map[string]interface{}, isSystemTag bool) (map[string]string, map[string]int64, map[string]float64, map[string]bool) {
 	if len(spanTag) == 0 {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	vStrMap := make(map[string]string)
 	vLongMap := make(map[string]int64)
 	vDoubleMap := make(map[string]float64)
+	vBoolMap := make(map[string]bool)
 	for key, value := range spanTag {
 		if key == tracespec.Input || key == tracespec.Output {
 			continue
 		}
 		switch v := value.(type) {
+		case bool:
+			if isSystemTag {
+				vStrMap[key] = util.Stringify(value)
+			} else {
+				vBoolMap[key] = v
+			}
 		case string:
 			vStrMap[key] = v
 		case int:
@@ -173,7 +181,7 @@ func parseTag(spanTag map[string]interface{}) (map[string]string, map[string]int
 		}
 	}
 
-	return vStrMap, vLongMap, vDoubleMap
+	return vStrMap, vLongMap, vDoubleMap, vBoolMap
 }
 
 var (
@@ -468,6 +476,7 @@ type UploadSpan struct {
 	TagsString       map[string]string  `json:"tags_string"`
 	TagsLong         map[string]int64   `json:"tags_long"`
 	TagsDouble       map[string]float64 `json:"tags_double"`
+	TagsBool         map[string]bool    `json:"tags_bool"`
 }
 
 type UploadFile struct {
