@@ -152,8 +152,7 @@ func (c *Client) UploadFile(ctx context.Context, path string, fileName string, r
 		return consts.ErrInternal.Wrap(fmt.Errorf("close multipart writer: %w", err))
 	}
 
-	//url := c.baseURL + path
-	url := "http://10.37.115.153:8888/v1/loop/files/upload"
+	url := c.baseURL + path
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return consts.ErrInternal.Wrap(fmt.Errorf("create request: %w", err))
