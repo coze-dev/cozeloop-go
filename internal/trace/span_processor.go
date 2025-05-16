@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 )
@@ -43,8 +44,13 @@ type SpanProcessor interface {
 	ForceFlush(ctx context.Context) error
 }
 
-func NewBatchSpanProcessor(client *httpclient.Client) SpanProcessor {
-	exporter := &SpanExporter{client: client}
+func NewBatchSpanProcessor(ex Exporter, client *httpclient.Client) SpanProcessor {
+	var exporter Exporter
+	exporter = &SpanExporter{client: client}
+	if ex != nil {
+		exporter = ex
+	}
+
 	fileRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              "file retry",
@@ -177,9 +183,9 @@ func newExportSpansFunc(exporter Exporter, spanRetryQueue QueueManager, fileQueu
 
 func newExportFilesFunc(exporter Exporter, fileRetryQueue QueueManager) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
-		files := make([]*UploadFile, 0, len(l))
+		files := make([]*entity.UploadFile, 0, len(l))
 		for _, f := range l {
-			if file, ok := f.(*UploadFile); ok {
+			if file, ok := f.(*entity.UploadFile); ok {
 				files = append(files, file)
 			}
 		}
