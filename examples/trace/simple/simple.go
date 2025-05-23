@@ -47,6 +47,7 @@ func main() {
 		"mode":                  "simple",
 		"node_id":               6076665,
 		"node_process_duration": 228.6,
+		"is_first_node":         true,
 	})
 
 	// set custom baggage, baggage can cover tag of sample key, and baggage will pass to child span automatically.
