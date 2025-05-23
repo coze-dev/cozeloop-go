@@ -48,4 +48,5 @@ const (
 	LatencyFirstResp    = "latency_first_resp"
 
 	CallType = "call_type"
+	LogID    = "log_id"
 )
