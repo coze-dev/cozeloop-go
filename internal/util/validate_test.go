@@ -8,7 +8,7 @@ import "testing"
 func TestIsValidMDNBase64(t *testing.T) {
 	testStr := "data:image/png;base64,SGVsbG8sIFdvcmxkIQ=="
 	t.Run("TestIsValidMDNBase64", func(t *testing.T) {
-		if got := ParseValidMDNBase64(testStr); !got {
+		if _, got := ParseValidMDNBase64(testStr); !got {
 			t.Errorf("ParseValidMDNBase64() = %v", got)
 		}
 	})

@@ -64,3 +64,11 @@ func WithStartNewTrace() StartSpanOption {
 		ops.StartNewTrace = true
 	}
 }
+
+// WithSpanWorkspaceID Set the workspaceID of the span.
+// This field is inner field. You should not set it.
+func WithSpanWorkspaceID(workspaceID string) StartSpanOption {
+	return func(ops *startSpanOptions) {
+		ops.WorkspaceID = workspaceID
+	}
+}
