@@ -183,10 +183,10 @@ func (c *Client) setHeaders(ctx context.Context, request *http.Request, headers 
 	}
 	setUserAgent(request)
 
-	if env := os.Getenv("x-tt-env"); env != "" {
+	if env := os.Getenv("x_tt_env"); env != "" {
 		request.Header.Set("x-tt-env", env)
 	}
-	if env := os.Getenv("x-use-ppe"); env != "" {
+	if env := os.Getenv("x_use_ppe"); env != "" {
 		request.Header.Set("x-use-ppe", "1")
 	}
 
