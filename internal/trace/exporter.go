@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
@@ -19,8 +20,8 @@ import (
 )
 
 type Exporter interface {
-	ExportSpans(ctx context.Context, spans []*UploadSpan) error
-	ExportFiles(ctx context.Context, files []*UploadFile) error
+	ExportSpans(ctx context.Context, spans []*entity.UploadSpan) error
+	ExportFiles(ctx context.Context, files []*entity.UploadFile) error
 }
 
 const (
@@ -41,7 +42,7 @@ type SpanExporter struct {
 	client *httpclient.Client
 }
 
-func (e *SpanExporter) ExportFiles(ctx context.Context, files []*UploadFile) error {
+func (e *SpanExporter) ExportFiles(ctx context.Context, files []*entity.UploadFile) error {
 	uploadFiles := files
 	for _, file := range uploadFiles {
 		if file == nil {
@@ -64,7 +65,7 @@ func (e *SpanExporter) ExportFiles(ctx context.Context, files []*UploadFile) err
 	return nil
 }
 
-func (e *SpanExporter) ExportSpans(ctx context.Context, ss []*UploadSpan) (err error) {
+func (e *SpanExporter) ExportSpans(ctx context.Context, ss []*entity.UploadSpan) (err error) {
 	if len(ss) == 0 {
 		return
 	}
@@ -84,9 +85,9 @@ func (e *SpanExporter) ExportSpans(ctx context.Context, ss []*UploadSpan) (err e
 	return
 }
 
-func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadSpan, []*UploadFile) {
-	resSpan := make([]*UploadSpan, 0, len(spans))
-	resFile := make([]*UploadFile, 0, len(spans))
+func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.UploadSpan, []*entity.UploadFile) {
+	resSpan := make([]*entity.UploadSpan, 0, len(spans))
+	resFile := make([]*entity.UploadFile, 0, len(spans))
 
 	for _, span := range spans {
 		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span)
@@ -104,7 +105,7 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*UploadS
 
 		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.TagMap, false)
 		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
-		resSpan = append(resSpan, &UploadSpan{
+		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
 			SpanID:           span.GetSpanID(),
 			ParentID:         span.GetParentID(),
@@ -196,19 +197,19 @@ var (
 )
 
 type tagValueConverter struct {
-	convertFunc func(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*UploadFile, err error)
+	convertFunc func(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error)
 }
 
-func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*UploadFile, err error) {
+func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
 	value, ok := span.TagMap[spanKey]
 	if !ok {
 		return
 	}
 
-	uploadFile = make([]*UploadFile, 0)
+	uploadFile = make([]*entity.UploadFile, 0)
 	if _, ok := span.multiModalityKeyMap[spanKey]; !ok {
 		// input/output is just text string
-		var f *UploadFile
+		var f *entity.UploadFile
 		valueRes, f = transferText(fmt.Sprintf("%v", value), span, spanKey)
 		if f != nil {
 			uploadFile = append(uploadFile, f)
@@ -238,7 +239,7 @@ func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes str
 		// If the content is still too long, truncate it, and
 		// decide whether to report the oversized content based on the UltraLargeReport option.
 		if len(valueRes) > consts.MaxBytesOfOneTagValueOfInputOutput {
-			var f *UploadFile
+			var f *entity.UploadFile
 			valueRes, f = transferText(valueRes, span, spanKey)
 			if f != nil {
 				uploadFile = append(uploadFile, f)
@@ -249,16 +250,16 @@ func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes str
 	return
 }
 
-func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*UploadFile, err error) {
+func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
 	value, ok := span.TagMap[spanKey]
 	if !ok {
 		return
 	}
 
-	uploadFile = make([]*UploadFile, 0)
+	uploadFile = make([]*entity.UploadFile, 0)
 	if _, ok := span.multiModalityKeyMap[spanKey]; !ok {
 		// input/output is just text string
-		var f *UploadFile
+		var f *entity.UploadFile
 		valueRes, f = transferText(fmt.Sprintf("%v", value), span, spanKey)
 		uploadFile = append(uploadFile, f)
 	} else {
@@ -289,7 +290,7 @@ func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes st
 		// If the content is still too long, truncate it, and
 		// decide whether to report the oversized content based on the UltraLargeReport option.
 		if len(valueRes) > consts.MaxBytesOfOneTagValueOfInputOutput {
-			var f *UploadFile
+			var f *entity.UploadFile
 			valueRes, f = transferText(valueRes, span, spanKey)
 			if f != nil {
 				uploadFile = append(uploadFile, f)
@@ -300,11 +301,11 @@ func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes st
 	return
 }
 
-func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*UploadFile, putContentMap map[string]string, err error) {
+func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*entity.UploadFile, putContentMap map[string]string, err error) {
 	if span == nil {
 		return
 	}
-	spanUploadFiles = make([]*UploadFile, 0)
+	spanUploadFiles = make([]*entity.UploadFile, 0)
 	putContentMap = make(map[string]string)
 
 	for key, converter := range tagValueConverterMap {
@@ -322,7 +323,7 @@ func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*Uploa
 	return
 }
 
-func transferObjectStorage(spanUploadFile []*UploadFile) (string, error) {
+func transferObjectStorage(spanUploadFile []*entity.UploadFile) (string, error) {
 	objectStorage := model2.ObjectStorage{
 		Attachments: make([]*model2.Attachment, 0),
 	}
@@ -333,13 +334,13 @@ func transferObjectStorage(spanUploadFile []*UploadFile) (string, error) {
 		}
 		isExist = true
 		switch file.UploadType {
-		case model2.UploadTypeLong:
+		case entity.UploadTypeLong:
 			if file.TagKey == tracespec.Input {
 				objectStorage.InputTosKey = file.TosKey
 			} else if file.TagKey == tracespec.Output {
 				objectStorage.OutputTosKey = file.TosKey
 			}
-		case model2.UploadTypeMultiModality:
+		case entity.UploadTypeMultiModality:
 			objectStorage.Attachments = append(objectStorage.Attachments, &model2.Attachment{
 				Field:  file.TagKey,
 				Name:   file.Name,
@@ -359,7 +360,7 @@ func transferObjectStorage(spanUploadFile []*UploadFile) (string, error) {
 	return string(objectStorageByte), nil
 }
 
-func transferMessagePart(src *tracespec.ModelMessagePart, span *Span, tagKey string) (uploadFiles []*UploadFile) {
+func transferMessagePart(src *tracespec.ModelMessagePart, span *Span, tagKey string) (uploadFiles []*entity.UploadFile) {
 	if src == nil || span == nil {
 		return nil
 	}
@@ -382,7 +383,7 @@ func transferMessagePart(src *tracespec.ModelMessagePart, span *Span, tagKey str
 	return
 }
 
-func transferText(src string, span *Span, tagKey string) (string, *UploadFile) {
+func transferText(src string, span *Span, tagKey string) (string, *entity.UploadFile) {
 	if len(src) == 0 {
 		return "", nil
 	}
@@ -394,10 +395,10 @@ func transferText(src string, span *Span, tagKey string) (string, *UploadFile) {
 	if len(src) > consts.MaxBytesOfOneTagValueOfInputOutput {
 		//key := "traceid/spanid/tagkey/filetype/large_text"
 		key := fmt.Sprintf(KeyTemplateLargeText, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeText)
-		return util.TruncateStringByChar(src, consts.TextTruncateCharLength), &UploadFile{
+		return util.TruncateStringByChar(src, consts.TextTruncateCharLength), &entity.UploadFile{
 			TosKey:     key,
 			Data:       src,
-			UploadType: model2.UploadTypeLong,
+			UploadType: entity.UploadTypeLong,
 			TagKey:     tagKey,
 			FileType:   fileTypeText,
 			SpaceID:    span.GetSpaceID(),
@@ -407,7 +408,7 @@ func transferText(src string, span *Span, tagKey string) (string, *UploadFile) {
 	return src, nil
 }
 
-func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *UploadFile {
+func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *entity.UploadFile {
 	if src == nil || span == nil {
 		return nil
 	}
@@ -419,10 +420,10 @@ func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *Upl
 	key := fmt.Sprintf(KeyTemplateMultiModality, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeImage, util.Gen16CharID())
 	bin, _ := base64.StdEncoding.DecodeString(src.URL)
 	src.URL = key
-	return &UploadFile{
+	return &entity.UploadFile{
 		TosKey:     key,
 		Data:       string(bin),
-		UploadType: model2.UploadTypeMultiModality,
+		UploadType: entity.UploadTypeMultiModality,
 		TagKey:     tagKey,
 		Name:       src.Name,
 		FileType:   fileTypeImage,
@@ -430,7 +431,7 @@ func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *Upl
 	}
 }
 
-func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *UploadFile {
+func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *entity.UploadFile {
 	if src == nil || span == nil {
 		return nil
 	}
@@ -442,10 +443,10 @@ func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *Uploa
 	key := fmt.Sprintf(KeyTemplateMultiModality, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeFile, util.Gen16CharID())
 	bin, _ := base64.StdEncoding.DecodeString(src.URL)
 	src.URL = key
-	return &UploadFile{
+	return &entity.UploadFile{
 		TosKey:     key,
 		Data:       string(bin),
-		UploadType: model2.UploadTypeMultiModality,
+		UploadType: entity.UploadTypeMultiModality,
 		TagKey:     tagKey,
 		Name:       src.Name,
 		FileType:   fileTypeFile,
@@ -454,37 +455,5 @@ func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *Uploa
 }
 
 type UploadSpanData struct {
-	Spans []*UploadSpan `json:"spans"`
-}
-
-type UploadSpan struct {
-	StartedATMicros  int64              `json:"started_at_micros"`
-	SpanID           string             `json:"span_id"`
-	ParentID         string             `json:"parent_id"`
-	TraceID          string             `json:"trace_id"`
-	DurationMicros   int64              `json:"duration_micros"`
-	WorkspaceID      string             `json:"workspace_id"`
-	SpanName         string             `json:"span_name"`
-	SpanType         string             `json:"span_type"`
-	StatusCode       int32              `json:"status_code"`
-	Input            string             `json:"input"`
-	Output           string             `json:"output"`
-	ObjectStorage    string             `json:"object_storage"`
-	SystemTagsString map[string]string  `json:"system_tags_string"`
-	SystemTagsLong   map[string]int64   `json:"system_tags_long"`
-	SystemTagsDouble map[string]float64 `json:"system_tags_double"`
-	TagsString       map[string]string  `json:"tags_string"`
-	TagsLong         map[string]int64   `json:"tags_long"`
-	TagsDouble       map[string]float64 `json:"tags_double"`
-	TagsBool         map[string]bool    `json:"tags_bool"`
-}
-
-type UploadFile struct {
-	TosKey     string
-	Data       string
-	UploadType model2.UploadType
-	TagKey     string
-	Name       string
-	FileType   string
-	SpaceID    string
+	Spans []*entity.UploadSpan `json:"spans"`
 }

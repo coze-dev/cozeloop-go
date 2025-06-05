@@ -46,4 +46,7 @@ const (
 	ModelIdentification = "model_identification"
 	TokenUsageBackup    = "token_usage_backup"
 	LatencyFirstResp    = "latency_first_resp"
+
+	CallType = "call_type"
+	LogID    = "log_id"
 )
