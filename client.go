@@ -426,7 +426,7 @@ func (c *loopClient) PromptFormat(ctx context.Context, loopPrompt *entity.Prompt
 
 func (c *loopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	if c.closed {
-		return nil, defaultNoopSpan
+		return ctx, defaultNoopSpan
 	}
 	config := trace.StartSpanOptions{}
 	for _, opt := range opts {
