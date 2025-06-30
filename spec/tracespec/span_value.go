@@ -36,8 +36,9 @@ const (
 	VLangPython     = "python"
 	VLangTypeScript = "ts"
 
-	VLibEino      = "eino"
-	VLibLangChain = "langchain"
+	VLibEino          = "eino"
+	VLibLangChain     = "langchain"
+	VLibOpentelemetry = "opentelemetry"
 
 	VSceneCustom         = "custom"          // user custom, it has the same meaning as blank.
 	VScenePromptHub      = "prompt_hub"      // get_prompt
