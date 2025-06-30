@@ -4,9 +4,10 @@
 package tracespec
 
 type Runtime struct {
-	Language string `json:"language"`          // from enum VLang in span_value.go
-	Library  string `json:"library,omitempty"` // integration library, from enum VLib in span_value.go
-	Scene    string `json:"scene,omitempty"`   // usage scene, from enum VScene in span_value.go
+	Language     string `json:"language"`          // from enum VLang in span_value.go
+	Library      string `json:"library,omitempty"` // integration library, from enum VLib in span_value.go
+	Scene        string `json:"scene,omitempty"`   // usage scene, from enum VScene in span_value.go
+	SceneVersion string `json:"scene_version,omitempty"`
 
 	// Dependency Versions.
 	LibraryVersion string `json:"library_version,omitempty"`
