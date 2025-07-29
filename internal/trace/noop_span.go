@@ -34,6 +34,11 @@ func (n noopSpan) SetInputTokens(ctx context.Context, inputTokens int)          
 func (n noopSpan) SetOutputTokens(ctx context.Context, outputTokens int)                 {}
 func (n noopSpan) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64)   {}
 func (n noopSpan) SetRuntime(ctx context.Context, runtime tracespec.Runtime)             {}
+func (n noopSpan) SetServiceName(ctx context.Context, serviceName string)                {}
+func (n noopSpan) SetLogID(ctx context.Context, logID string)                            {}
+func (n noopSpan) SetFinishTime(finishTime time.Time)                                    {}
+func (n noopSpan) SetSystemTags(ctx context.Context, systemTags map[string]interface{})  {}
+func (n noopSpan) SetDeploymentEnv(ctx context.Context, deploymentEnv string)            {}
 
 // implement of Span
 func (n noopSpan) SetTags(ctx context.Context, tagKVs map[string]interface{})     {}

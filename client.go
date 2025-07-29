@@ -35,7 +35,7 @@ type Client interface {
 
 	// GetWorkspaceID return workspace id
 	GetWorkspaceID() string
-	// Close Close the client. Should be called before program exit.
+	// Close close the client. Should be called before program exit.
 	Close(ctx context.Context)
 }
 
@@ -46,6 +46,7 @@ type HttpClient = httpclient.HTTPClient
 
 type options struct {
 	apiBaseURL    string
+	apiBasePath   *APIBasePath
 	workspaceID   string
 	httpClient    HttpClient
 	timeout       time.Duration
@@ -62,12 +63,16 @@ type options struct {
 	promptCacheRefreshInterval time.Duration
 	promptTrace                bool
 	exporter                   trace.Exporter
+	traceFinishEventProcessor  func(ctx context.Context, info *FinishEventInfo)
+	traceTagTruncateConf       *TagTruncateConf
+	traceQueueConf             *TraceQueueConf
 }
 
 func (o *options) MD5() string {
 	h := md5.New()
 	separator := "\t"
 	h.Write([]byte(o.apiBaseURL + separator))
+	h.Write([]byte(fmt.Sprintf("%p", o.apiBasePath) + separator))
 	h.Write([]byte(o.workspaceID + separator))
 	h.Write([]byte(fmt.Sprintf("%p", o.httpClient) + separator))
 	h.Write([]byte(o.timeout.String() + separator))
@@ -80,6 +85,10 @@ func (o *options) MD5() string {
 	h.Write([]byte(fmt.Sprintf("%d", o.promptCacheMaxCount) + separator))
 	h.Write([]byte(o.promptCacheRefreshInterval.String() + separator))
 	h.Write([]byte(fmt.Sprintf("%v", o.promptTrace) + separator))
+	h.Write([]byte(fmt.Sprintf("%p", o.exporter) + separator))
+	h.Write([]byte(fmt.Sprintf("%p", o.traceFinishEventProcessor) + separator))
+	h.Write([]byte(fmt.Sprintf("%p", o.traceTagTruncateConf) + separator))
+	h.Write([]byte(fmt.Sprintf("%p", o.traceQueueConf) + separator))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -133,10 +142,28 @@ func NewClient(opts ...Option) (Client, error) {
 			Timeout:       options.timeout,
 			UploadTimeout: options.uploadTimeout,
 		})
+	traceFinishEventProcessor := trace.DefaultFinishEventProcessor
+	if options.traceFinishEventProcessor != nil {
+		traceFinishEventProcessor = func(ctx context.Context, info *consts.FinishEventInfo) {
+			trace.DefaultFinishEventProcessor(ctx, info)
+			options.traceFinishEventProcessor(ctx, (*FinishEventInfo)(info))
+		}
+	}
+	var spanUploadPath string
+	var fileUploadPath string
+	if options.apiBasePath != nil {
+		spanUploadPath = options.apiBasePath.TraceSpanUploadPath
+		fileUploadPath = options.apiBasePath.TraceFileUploadPath
+	}
 	c.traceProvider = trace.NewTraceProvider(httpClient, trace.Options{
-		WorkspaceID:      options.workspaceID,
-		UltraLargeReport: options.ultraLargeReport,
-		Exporter:         options.exporter,
+		WorkspaceID:          options.workspaceID,
+		UltraLargeReport:     options.ultraLargeReport,
+		Exporter:             options.exporter,
+		FinishEventProcessor: traceFinishEventProcessor,
+		TagTruncateConf:      (*trace.TagTruncateConf)(options.traceTagTruncateConf),
+		SpanUploadPath:       spanUploadPath,
+		FileUploadPath:       fileUploadPath,
+		QueueConf:            (*trace.QueueConf)(options.traceQueueConf),
 	})
 	c.promptProvider = prompt.NewPromptProvider(httpClient, c.traceProvider, prompt.Options{
 		WorkspaceID:                options.workspaceID,
@@ -182,6 +209,12 @@ func WithJWTOAuthPublicKeyID(publicKeyID string) Option {
 func WithAPIBaseURL(apiBaseURL string) Option {
 	return func(p *options) {
 		p.apiBaseURL = apiBaseURL
+	}
+}
+
+func WithAPIBasePath(apiBasePath *APIBasePath) Option {
+	return func(p *options) {
+		p.apiBasePath = apiBasePath
 	}
 }
 
@@ -241,9 +274,30 @@ func WithPromptTrace(enable bool) Option {
 	}
 }
 
+// WithExporter set custom trace exporter.
 func WithExporter(e trace.Exporter) Option {
 	return func(p *options) {
 		p.exporter = e
+	}
+}
+
+// WithTraceFinishEventProcessor set custom finish event processor, after span finish.
+func WithTraceFinishEventProcessor(f func(ctx context.Context, info *FinishEventInfo)) Option {
+	return func(p *options) {
+		p.traceFinishEventProcessor = f
+	}
+}
+
+// WithTraceTagTruncateConf set span tag truncate conf.
+func WithTraceTagTruncateConf(conf *TagTruncateConf) Option {
+	return func(p *options) {
+		p.traceTagTruncateConf = conf
+	}
+}
+
+func WithTraceQueueConf(conf *TraceQueueConf) Option {
+	return func(p *options) {
+		p.traceQueueConf = conf
 	}
 }
 
@@ -350,13 +404,27 @@ func buildAuth(opts options) (httpclient.Auth, error) {
 	return nil, ErrAuthInfoRequired
 }
 
+func SetDefaultClient(client Client) {
+	defaultClientLock.Lock()
+	defer defaultClientLock.Unlock()
+	defaultClient = client
+}
+
 func getDefaultClient() Client {
+	if defaultClient != nil {
+		return defaultClient
+	}
 	once.Do(func() {
 		var err error
-		defaultClient, err = NewClient()
+		client, err := NewClient()
 		if err != nil {
+			defaultClientLock.Lock()
 			defaultClient = &NoopClient{newClientError: err}
+			defaultClientLock.Unlock()
 		} else {
+			defaultClientLock.Lock()
+			defaultClient = client
+			defaultClientLock.Unlock()
 			sigChan := make(chan os.Signal, 1)
 			signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 			go func() {
@@ -366,7 +434,9 @@ func getDefaultClient() Client {
 
 				logger.CtxInfof(ctx, "Received signal: %v, starting graceful shutdown...", sig)
 				defaultClient.Close(ctx)
+				defaultClientLock.Lock()
 				defaultClient = &NoopClient{newClientError: consts.ErrClientClosed}
+				defaultClientLock.Unlock()
 				logger.CtxInfof(ctx, "Graceful shutdown finished.")
 				os.Exit(0)
 			}()
@@ -376,9 +446,10 @@ func getDefaultClient() Client {
 }
 
 var (
-	defaultClient Client
-	once          sync.Once
-	clientCache   sync.Map // client cache to avoid creating multiple clients with the same options
+	defaultClient     Client
+	defaultClientLock sync.RWMutex
+	once              sync.Once
+	clientCache       sync.Map // client cache to avoid creating multiple clients with the same options
 )
 
 type loopClient struct {
@@ -426,7 +497,7 @@ func (c *loopClient) PromptFormat(ctx context.Context, loopPrompt *entity.Prompt
 
 func (c *loopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	if c.closed {
-		return ctx, defaultNoopSpan
+		return ctx, DefaultNoopSpan
 	}
 	config := trace.StartSpanOptions{}
 	for _, opt := range opts {
@@ -438,25 +509,25 @@ func (c *loopClient) StartSpan(ctx context.Context, name, spanType string, opts 
 	ctx, span, err := c.traceProvider.StartSpan(ctx, name, spanType, config)
 	if err != nil {
 		logger.CtxWarnf(ctx, "start span failed, return noop span. %v", err)
-		return ctx, defaultNoopSpan
+		return ctx, DefaultNoopSpan
 	}
 	return ctx, span
 }
 
 func (c *loopClient) GetSpanFromContext(ctx context.Context) Span {
 	if c.closed {
-		return defaultNoopSpan
+		return DefaultNoopSpan
 	}
 	span := c.traceProvider.GetSpanFromContext(ctx)
 	if span == nil {
-		return defaultNoopSpan
+		return DefaultNoopSpan
 	}
 	return span
 }
 
 func (c *loopClient) GetSpanFromHeader(ctx context.Context, header map[string]string) SpanContext {
 	if c.closed {
-		return defaultNoopSpan
+		return DefaultNoopSpan
 	}
 	return c.traceProvider.GetSpanFromHeader(ctx, header)
 }

@@ -110,6 +110,26 @@ type commonSpanSetter interface {
 	// The runtime of the LLM, such as language, library, scene, etc.
 	// The recommended standard format is Runtime of spec package
 	SetRuntime(ctx context.Context, runtime tracespec.Runtime)
+
+	// SetServiceName
+	// set the custom service name, identify different services.
+	SetServiceName(ctx context.Context, serviceName string)
+
+	// SetLogID
+	// set the custom log id, identify different query.
+	SetLogID(ctx context.Context, logID string)
+
+	// SetFinishTime
+	// Default is time.Now() when span Finish(). DO NOT set unless you do not use default time.
+	SetFinishTime(finishTime time.Time)
+
+	// SetSystemTags
+	// set the system tags. DO NOT set unless you know what you are doing.
+	SetSystemTags(ctx context.Context, systemTags map[string]interface{})
+
+	// SetDeploymentEnv
+	// set the deployment env, identify custom env.
+	SetDeploymentEnv(ctx context.Context, deploymentEnv string)
 }
 
 // SpanContext is the interface for span Baggage transfer.
