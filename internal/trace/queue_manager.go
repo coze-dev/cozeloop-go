@@ -13,12 +13,21 @@ package trace
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
 	"github.com/coze-dev/cozeloop-go/internal/util"
+)
+
+const (
+	queueNameSpan      = "span"
+	queueNameSpanRetry = "span_retry"
+	queueNameFile      = "file"
+	queueNameFileRetry = "file_retry"
 )
 
 type exportFunc func(ctx context.Context, s []interface{})
@@ -37,7 +46,8 @@ type batchQueueManagerOptions struct {
 	maxExportBatchLength   int
 	maxExportBatchByteSize int
 
-	exportFunc exportFunc
+	exportFunc           exportFunc
+	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo)
 }
 
 func newBatchQueueManager(o batchQueueManagerOptions) *BatchQueueManager {
@@ -181,17 +191,40 @@ func (b *BatchQueueManager) Enqueue(ctx context.Context, sd interface{}, byteSiz
 	if atomic.LoadInt32(&b.stopped) != 0 {
 		return
 	}
-
+	var extraParams *consts.FinishEventInfoExtra
+	var eventType = consts.SpanFinishEventFileQueueEntryRate
+	var errMsg string
+	var isFail bool
 	select {
 	case b.queue <- sd:
 		b.batchMutex.Lock()
 		b.batchByteSize += byteSize
 		b.batchMutex.Unlock()
-		//logger.CtxDebugf(ctx, "%s queue length: %d", b.o.queueName, len(b.queue))
-		return
 	default: // queue is full, not block, drop
-		logger.CtxErrorf(ctx, "%s queue is full, dropped item", b.o.queueName)
+		errMsg = fmt.Sprintf("%s queue is full, dropped item", b.o.queueName)
+		isFail = true
 		atomic.AddUint32(&b.dropped, 1)
+	}
+
+	switch b.o.queueName {
+	case queueNameSpan, queueNameSpanRetry:
+		eventType = consts.SpanFinishEventSpanQueueEntryRate
+		span, ok := sd.(*Span)
+		if ok {
+			extraParams = &consts.FinishEventInfoExtra{
+				IsRootSpan: span.IsRootSpan(),
+			}
+		}
+	default:
+	}
+	if b.o.finishEventProcessor != nil {
+		b.o.finishEventProcessor(ctx, &consts.FinishEventInfo{
+			EventType:   eventType,
+			IsEventFail: isFail,
+			ItemNum:     1,
+			DetailMsg:   errMsg,
+			ExtraParams: extraParams,
+		})
 	}
 	return
 }

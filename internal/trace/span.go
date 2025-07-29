@@ -55,9 +55,12 @@ type Span struct {
 	Name     string
 
 	// These params can be changed, but remember locking when changed
+	ServiceName  string
+	LogID        string
 	WorkspaceID  string
 	ParentSpanID string
 	StartTime    time.Time
+	FinishTime   time.Time
 	Duration     time.Duration
 	TagMap       map[string]interface{} // custom tags
 	SystemTagMap map[string]interface{} // system tags
@@ -828,8 +831,12 @@ func (s *Span) setStatInfo(ctx context.Context) {
 		s.SetTags(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
 	}
 
-	// Duration = now - start_time, unit: microseconds
-	duration := time.Now().UnixNano()/1000 - s.GetStartTime().UnixNano()/1000
+	// Duration = finish_time - start_time, unit: microseconds
+	finishTime := time.Now()
+	if !s.GetFinishTime().IsZero() {
+		finishTime = s.GetFinishTime()
+	}
+	duration := finishTime.UnixNano()/1000 - s.GetStartTime().UnixNano()/1000
 	s.lock.Lock()
 	s.Duration = time.Duration(duration)
 	s.lock.Unlock()
@@ -841,6 +848,22 @@ func (s *Span) GetStartTime() time.Time {
 	}
 
 	return s.StartTime
+}
+
+func (s *Span) GetLogID() string {
+	if s == nil {
+		return ""
+	}
+
+	return s.LogID
+}
+
+func (s *Span) GetServiceName() string {
+	if s == nil {
+		return ""
+	}
+
+	return s.ServiceName
 }
 
 func (s *Span) ToHeader() (map[string]string, error) {
@@ -888,4 +911,34 @@ func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
 	s.lock.Lock()
 	s.SystemTagMap[tracespec.Runtime_] = runtime
 	s.lock.Unlock()
+}
+
+func (s *Span) SetServiceName(ctx context.Context, serviceName string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.ServiceName = serviceName
+}
+
+func (s *Span) SetLogID(ctx context.Context, logID string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.LogID = logID
+}
+
+func (s *Span) IsRootSpan() bool {
+	return s.ParentSpanID == "" || s.ParentSpanID == "0"
+}
+
+func (s *Span) SetFinishTime(finishTime time.Time) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.FinishTime = finishTime
+}
+
+func (s *Span) GetFinishTime() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+
+	return s.FinishTime
 }

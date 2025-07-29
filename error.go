@@ -18,3 +18,15 @@ var (
 
 type AuthError = consts.AuthError
 type RemoteServiceError = consts.RemoteServiceError
+
+// SpanFinishEvent finish inner event
+type SpanFinishEvent consts.SpanFinishEvent
+
+const (
+	SpanFinishEventSpanQueueEntryRate = SpanFinishEvent(consts.SpanFinishEventSpanQueueEntryRate)
+	SpanFinishEventFileQueueEntryRate = SpanFinishEvent(consts.SpanFinishEventFileQueueEntryRate)
+	SpanFinishEventFlushSpanRate      = SpanFinishEvent(consts.SpanFinishEventFlushSpanRate)
+	SpanFinishEventFlushFileRate      = SpanFinishEvent(consts.SpanFinishEventFlushFileRate)
+)
+
+type FinishEventInfo consts.FinishEventInfo

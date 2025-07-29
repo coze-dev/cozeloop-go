@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
-	"github.com/coze-dev/cozeloop-go/internal/logger"
 )
 
 // Defaults for batchQueueManagerOptions.
@@ -44,7 +44,11 @@ type SpanProcessor interface {
 	ForceFlush(ctx context.Context) error
 }
 
-func NewBatchSpanProcessor(ex Exporter, client *httpclient.Client) SpanProcessor {
+func NewBatchSpanProcessor(
+	ex Exporter,
+	client *httpclient.Client,
+	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo),
+) SpanProcessor {
 	var exporter Exporter
 	exporter = &SpanExporter{client: client}
 	if ex != nil {
@@ -53,41 +57,45 @@ func NewBatchSpanProcessor(ex Exporter, client *httpclient.Client) SpanProcessor
 
 	fileRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
-			queueName:              "file retry",
+			queueName:              queueNameFileRetry,
 			batchTimeout:           time.Duration(FileScheduleDelay) * time.Millisecond,
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
 			maxExportBatchByteSize: MaxFileExportBatchByteSize,
-			exportFunc:             newExportFilesFunc(exporter, nil),
+			exportFunc:             newExportFilesFunc(exporter, nil, finishEventProcessor),
+			finishEventProcessor:   finishEventProcessor,
 		})
 	fileQM := newBatchQueueManager(
 		batchQueueManagerOptions{
-			queueName:              "file",
+			queueName:              queueNameFile,
 			batchTimeout:           time.Duration(FileScheduleDelay) * time.Millisecond,
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
 			maxExportBatchByteSize: MaxFileExportBatchByteSize,
-			exportFunc:             newExportFilesFunc(exporter, fileRetryQM),
+			exportFunc:             newExportFilesFunc(exporter, fileRetryQM, finishEventProcessor),
+			finishEventProcessor:   finishEventProcessor,
 		})
 
 	spanRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
-			queueName:              "span retry",
+			queueName:              queueNameSpanRetry,
 			batchTimeout:           time.Duration(DefaultScheduleDelay) * time.Millisecond,
 			maxQueueLength:         DefaultMaxQueueLength,
 			maxExportBatchLength:   MaxRetryExportBatchLength,
 			maxExportBatchByteSize: DefaultMaxExportBatchByteSize,
-			exportFunc:             newExportSpansFunc(exporter, nil, fileQM),
+			exportFunc:             newExportSpansFunc(exporter, nil, fileQM, finishEventProcessor),
+			finishEventProcessor:   finishEventProcessor,
 		})
 
 	spanQM := newBatchQueueManager(
 		batchQueueManagerOptions{
-			queueName:              "span",
+			queueName:              queueNameSpan,
 			batchTimeout:           time.Duration(DefaultScheduleDelay) * time.Millisecond,
 			maxQueueLength:         DefaultMaxQueueLength,
 			maxExportBatchLength:   DefaultMaxExportBatchLength,
 			maxExportBatchByteSize: DefaultMaxExportBatchByteSize,
-			exportFunc:             newExportSpansFunc(exporter, spanRetryQM, fileQM),
+			exportFunc:             newExportSpansFunc(exporter, spanRetryQM, fileQM, finishEventProcessor),
+			finishEventProcessor:   finishEventProcessor,
 		})
 
 	return &BatchSpanProcessor{
@@ -153,7 +161,12 @@ func (b *BatchSpanProcessor) ForceFlush(ctx context.Context) error {
 	return nil
 }
 
-func newExportSpansFunc(exporter Exporter, spanRetryQueue QueueManager, fileQueue QueueManager) exportFunc {
+func newExportSpansFunc(
+	exporter Exporter,
+	spanRetryQueue QueueManager,
+	fileQueue QueueManager,
+	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo),
+) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
 		spans := make([]*Span, 0, len(l))
 		for _, s := range l {
@@ -161,12 +174,17 @@ func newExportSpansFunc(exporter Exporter, spanRetryQueue QueueManager, fileQueu
 				spans = append(spans, span)
 			}
 		}
+		var errMsg string
+		var isFail bool
 		uploadSpans, uploadFiles := transferToUploadSpanAndFile(ctx, spans)
 		if err := exporter.ExportSpans(ctx, uploadSpans); err != nil { // fail, send to retry queue.
 			if spanRetryQueue != nil {
 				for _, span := range spans {
 					spanRetryQueue.Enqueue(ctx, span, span.bytesSize)
 				}
+			} else {
+				errMsg = err.Error()
+				isFail = true
 			}
 		} else { // success, send to file queue.
 			for _, file := range uploadFiles {
@@ -178,10 +196,22 @@ func newExportSpansFunc(exporter Exporter, spanRetryQueue QueueManager, fileQueu
 				}
 			}
 		}
+		if finishEventProcessor != nil {
+			finishEventProcessor(ctx, &consts.FinishEventInfo{
+				EventType:   consts.SpanFinishEventFlushSpanRate,
+				IsEventFail: isFail,
+				ItemNum:     len(uploadSpans),
+				DetailMsg:   errMsg,
+			})
+		}
 	}
 }
 
-func newExportFilesFunc(exporter Exporter, fileRetryQueue QueueManager) exportFunc {
+func newExportFilesFunc(
+	exporter Exporter,
+	fileRetryQueue QueueManager,
+	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo),
+) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
 		files := make([]*entity.UploadFile, 0, len(l))
 		for _, f := range l {
@@ -189,13 +219,25 @@ func newExportFilesFunc(exporter Exporter, fileRetryQueue QueueManager) exportFu
 				files = append(files, file)
 			}
 		}
+		var errMsg string
+		var isFail bool
 		if err := exporter.ExportFiles(ctx, files); err != nil {
-			logger.CtxWarnf(ctx, "exporter export failed, err: %v", err)
 			if fileRetryQueue != nil {
 				for _, bat := range files {
 					fileRetryQueue.Enqueue(ctx, bat, int64(len(bat.Data)))
 				}
+			} else {
+				errMsg = err.Error()
+				isFail = true
 			}
+		}
+		if finishEventProcessor != nil {
+			finishEventProcessor(ctx, &consts.FinishEventInfo{
+				EventType:   consts.SpanFinishEventFlushFileRate,
+				IsEventFail: isFail,
+				ItemNum:     len(files),
+				DetailMsg:   errMsg,
+			})
 		}
 	}
 }

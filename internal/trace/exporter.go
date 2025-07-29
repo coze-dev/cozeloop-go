@@ -107,10 +107,12 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
 		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
+			LogID:            span.GetLogID(),
 			SpanID:           span.GetSpanID(),
 			ParentID:         span.GetParentID(),
 			TraceID:          span.GetTraceID(),
 			DurationMicros:   span.GetDuration(),
+			ServiceName:      span.GetServiceName(),
 			WorkspaceID:      span.GetSpaceID(),
 			SpanName:         span.GetSpanName(),
 			SpanType:         span.GetSpanType(),

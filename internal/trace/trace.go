@@ -22,9 +22,10 @@ type Provider struct {
 }
 
 type Options struct {
-	WorkspaceID      string
-	UltraLargeReport bool
-	Exporter         Exporter
+	WorkspaceID               string
+	UltraLargeReport          bool
+	Exporter                  Exporter
+	TraceFinishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo)
 }
 
 type StartSpanOptions struct {
@@ -41,9 +42,13 @@ type loopSpanKey struct{}
 
 func NewTraceProvider(httpClient *httpclient.Client, options Options) *Provider {
 	c := &Provider{
-		httpClient:    httpClient,
-		opt:           &options,
-		spanProcessor: NewBatchSpanProcessor(options.Exporter, httpClient),
+		httpClient: httpClient,
+		opt:        &options,
+		spanProcessor: NewBatchSpanProcessor(
+			options.Exporter,
+			httpClient,
+			options.TraceFinishEventProcessor,
+		),
 	}
 	return c
 }
@@ -54,6 +59,9 @@ func (t *Provider) GetOpts() *Options {
 
 func (t *Provider) StartSpan(ctx context.Context, name, spanType string, opts StartSpanOptions) (context.Context, *Span, error) {
 	// 0. check param
+	if name == "" || spanType == "" {
+
+	}
 	if len(name) > consts.MaxBytesOfOneTagValueDefault {
 		logger.CtxWarnf(ctx, "Name is too long, will be truncated to %d bytes, original name: %s", consts.MaxBytesOfOneTagValueDefault, name)
 		name = name[:consts.MaxBytesOfOneTagValueDefault]
@@ -152,7 +160,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 		ultraLargeReport:    t.opt.UltraLargeReport,
 		multiModalityKeyMap: make(map[string]struct{}),
 		spanProcessor:       t.spanProcessor,
-		flags:               0,
+		flags:               1, // for W3C, sampled by default
 		isFinished:          0,
 		lock:                sync.RWMutex{},
 		bytesSize:           0, // The initial value is 0. Default fields do not count towards the size.
@@ -170,4 +178,15 @@ func (t *Provider) Flush(ctx context.Context) {
 
 func (t *Provider) CloseTrace(ctx context.Context) {
 	_ = t.spanProcessor.Shutdown(ctx)
+}
+
+func DefaultFinishEventProcessor(ctx context.Context, info *consts.FinishEventInfo) {
+	if info == nil {
+		return
+	}
+	if info.IsEventFail {
+		logger.CtxErrorf(ctx, "finish_event[%s] fail, msg: %s", info.EventType, info.DetailMsg)
+	} else {
+		logger.CtxDebugf(ctx, "finish_event[%s] success, item_num: %d, msg: %s", info.EventType, info.ItemNum, info.DetailMsg)
+	}
 }
