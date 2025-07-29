@@ -11,7 +11,7 @@ import (
 	"github.com/coze-dev/cozeloop-go/internal/trace"
 )
 
-var defaultNoopSpan = trace.DefaultNoopSpan
+var DefaultNoopSpan = trace.DefaultNoopSpan
 
 // NoopClient a noop client
 type NoopClient struct {
@@ -39,17 +39,17 @@ func (c *NoopClient) PromptFormat(ctx context.Context, prompt *entity.Prompt, va
 
 func (c *NoopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
-	return ctx, defaultNoopSpan
+	return ctx, DefaultNoopSpan
 }
 
 func (c *NoopClient) GetSpanFromContext(ctx context.Context) Span {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
-	return defaultNoopSpan
+	return DefaultNoopSpan
 }
 
 func (c *NoopClient) GetSpanFromHeader(ctx context.Context, header map[string]string) SpanContext {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
-	return defaultNoopSpan
+	return DefaultNoopSpan
 }
 
 func (c *NoopClient) Flush(ctx context.Context) {

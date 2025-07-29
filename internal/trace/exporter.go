@@ -39,7 +39,13 @@ const (
 var _ Exporter = (*SpanExporter)(nil)
 
 type SpanExporter struct {
-	client *httpclient.Client
+	client     *httpclient.Client
+	uploadPath UploadPath
+}
+
+type UploadPath struct {
+	spanUploadPath string
+	fileUploadPath string
 }
 
 func (e *SpanExporter) ExportFiles(ctx context.Context, files []*entity.UploadFile) error {
@@ -50,14 +56,12 @@ func (e *SpanExporter) ExportFiles(ctx context.Context, files []*entity.UploadFi
 		}
 		logger.CtxDebugf(ctx, "uploadFile start, file name: %s", file.Name)
 		resp := httpclient.BaseResponse{}
-		err := e.client.UploadFile(ctx, pathUploadFile, file.TosKey, bytes.NewReader([]byte(file.Data)), map[string]string{"workspace_id": file.SpaceID}, &resp)
+		err := e.client.UploadFile(ctx, e.uploadPath.fileUploadPath, file.TosKey, bytes.NewReader([]byte(file.Data)), map[string]string{"workspace_id": file.SpaceID}, &resp)
 		if err != nil {
-			logger.CtxErrorf(ctx, "export files[%s] fail, err:[%v], retry later", file.TosKey, err)
-			return err
+			return consts.NewError(fmt.Sprintf("export files[%s] fail", file.TosKey)).Wrap(err)
 		}
 		if resp.GetCode() != 0 { // todo: some err code do not need retry
-			logger.CtxErrorf(ctx, "export files[%s] fail, code:[%v], msg:[%v] retry later", file.TosKey, resp.GetCode(), resp.GetMsg())
-			return consts.ErrRemoteService
+			return consts.NewError(fmt.Sprintf("export files[%s] fail, code:[%v], msg:[%v] retry later", file.TosKey, resp.GetCode(), resp.GetMsg()))
 		}
 		logger.CtxDebugf(ctx, "uploadFile end, file name: %s", file.Name)
 	}
@@ -69,17 +73,13 @@ func (e *SpanExporter) ExportSpans(ctx context.Context, ss []*entity.UploadSpan)
 	if len(ss) == 0 {
 		return
 	}
-	logger.CtxDebugf(ctx, "export spans, spans count: %d", len(ss))
-
 	resp := httpclient.BaseResponse{}
-	err = e.client.Post(ctx, pathIngestTrace, UploadSpanData{ss}, &resp)
+	err = e.client.Post(ctx, e.uploadPath.spanUploadPath, UploadSpanData{ss}, &resp)
 	if err != nil {
-		logger.CtxErrorf(ctx, "export spans fail, span count: [%d], err:[%v]", len(ss), err)
-		return err
+		return consts.NewError(fmt.Sprintf("export spans fail, span count: [%d]", len(ss))).Wrap(err)
 	}
 	if resp.GetCode() != 0 { // todo: some err code do not need retry
-		logger.CtxErrorf(ctx, "export spans fail, span count: [%d], code:[%v], msg:[%v]", len(ss), resp.GetCode(), resp.GetMsg())
-		return consts.ErrRemoteService
+		return consts.NewError(fmt.Sprintf("export spans fail, span count: [%d], code:[%v], msg:[%v]", len(ss), resp.GetCode(), resp.GetMsg()))
 	}
 
 	return
@@ -107,10 +107,12 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
 		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
+			LogID:            span.GetLogID(),
 			SpanID:           span.GetSpanID(),
 			ParentID:         span.GetParentID(),
 			TraceID:          span.GetTraceID(),
 			DurationMicros:   span.GetDuration(),
+			ServiceName:      span.GetServiceName(),
 			WorkspaceID:      span.GetSpaceID(),
 			SpanName:         span.GetSpanName(),
 			SpanType:         span.GetSpanType(),
