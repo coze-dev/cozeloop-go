@@ -74,7 +74,13 @@ type Span struct {
 	flags                  byte  // for W3C, useless now
 	isFinished             int32 // avoid executing finish repeatedly.
 	lock                   sync.RWMutex
-	bytesSize              int64 // bytes size of span, note: it is an estimated value, may not be accurate.
+	bytesSize              int64            // bytes size of span, note: it is an estimated value, may not be accurate.
+	tagTruncateConf        *TagTruncateConf // tag truncate byte conf
+}
+
+type TagTruncateConf struct {
+	NormalFieldMaxByte      int
+	InputOutputFieldMaxByte int
 }
 
 func (s *Span) setCutOffTag(cutOffKeys []string) {
@@ -642,7 +648,7 @@ func (s *Span) GetRectifiedMap(ctx context.Context, inputMap map[string]interfac
 			value = valueStr
 		}
 		// Truncate the value if a single tag's value is too large
-		tagValueLengthLimit := util.GetTagValueSizeLimit(key)
+		tagValueLengthLimit := s.getTagValueSizeLimit(key)
 		isUltraLargeReport := false
 		v, isTruncate := util.TruncateStringByByte(valueStr, tagValueLengthLimit)
 		if isTruncate {
@@ -673,6 +679,23 @@ func (s *Span) GetRectifiedMap(ctx context.Context, inputMap map[string]interfac
 
 	}
 	return validateMap, cutOffKeys, bytesSize
+}
+
+func (s *Span) getTagValueSizeLimit(tagKey string) int {
+	limit := util.GetTagValueSizeLimit(tagKey)
+
+	switch tagKey {
+	case tracespec.Input, tracespec.Output:
+		if s.tagTruncateConf != nil && s.tagTruncateConf.InputOutputFieldMaxByte > 0 {
+			limit = s.tagTruncateConf.InputOutputFieldMaxByte
+		}
+	default:
+		if s.tagTruncateConf != nil && s.tagTruncateConf.NormalFieldMaxByte > 0 {
+			limit = s.tagTruncateConf.NormalFieldMaxByte
+		}
+	}
+
+	return limit
 }
 
 func isTagValidDataType(key string, value interface{}) bool {

@@ -63,6 +63,7 @@ type options struct {
 	promptTrace                bool
 	exporter                   trace.Exporter
 	traceFinishEventProcessor  func(ctx context.Context, info *FinishEventInfo)
+	traceTagTruncateConf       *TagTruncateConf
 }
 
 func (o *options) MD5() string {
@@ -145,6 +146,7 @@ func NewClient(opts ...Option) (Client, error) {
 		UltraLargeReport:          options.ultraLargeReport,
 		Exporter:                  options.exporter,
 		TraceFinishEventProcessor: traceFinishEventProcessor,
+		TraceTagTruncateConf:      (*trace.TagTruncateConf)(options.traceTagTruncateConf),
 	})
 	c.promptProvider = prompt.NewPromptProvider(httpClient, c.traceProvider, prompt.Options{
 		WorkspaceID:                options.workspaceID,
@@ -258,6 +260,12 @@ func WithExporter(e trace.Exporter) Option {
 func WithTraceFinishEventProcessor(f func(ctx context.Context, info *FinishEventInfo)) Option {
 	return func(p *options) {
 		p.traceFinishEventProcessor = f
+	}
+}
+
+func WithTraceTagTruncateConf(conf *TagTruncateConf) Option {
+	return func(p *options) {
+		p.traceTagTruncateConf = conf
 	}
 }
 

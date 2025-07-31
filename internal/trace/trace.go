@@ -26,6 +26,7 @@ type Options struct {
 	UltraLargeReport          bool
 	Exporter                  Exporter
 	TraceFinishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo)
+	TraceTagTruncateConf      *TagTruncateConf
 }
 
 type StartSpanOptions struct {
@@ -164,6 +165,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 		isFinished:          0,
 		lock:                sync.RWMutex{},
 		bytesSize:           0, // The initial value is 0. Default fields do not count towards the size.
+		tagTruncateConf:     t.opt.TraceTagTruncateConf,
 	}
 
 	// 3. set Baggage from parent span
