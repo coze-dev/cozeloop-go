@@ -128,6 +128,8 @@ func toModelTemplateType(t TemplateType) entity.TemplateType {
 	switch t {
 	case TemplateTypeNormal:
 		return entity.TemplateTypeNormal
+	case TemplateTypeJinja2:
+		return entity.TemplateTypeJinja2
 	default:
 		return entity.TemplateTypeNormal
 	}
@@ -165,6 +167,24 @@ func toModelVariableType(vt VariableType) entity.VariableType {
 		return entity.VariableTypeString
 	case VariableTypePlaceholder:
 		return entity.VariableTypePlaceholder
+	case VariableTypeBoolean:
+		return entity.VariableTypeBoolean
+	case VariableTypeFloat:
+		return entity.VariableTypeFloat
+	case VariableTypeInteger:
+		return entity.VariableTypeInteger
+	case VariableTypeObject:
+		return entity.VariableTypeObject
+	case VariableTypeArrayString:
+		return entity.VariableTypeArrayString
+	case VariableTypeArrayInteger:
+		return entity.VariableTypeArrayInteger
+	case VariableTypeArrayFloat:
+		return entity.VariableTypeArrayFloat
+	case VariableTypeArrayBoolean:
+		return entity.VariableTypeArrayBoolean
+	case VariableTypeArrayObject:
+		return entity.VariableTypeArrayObject
 	default:
 		return entity.VariableTypeString
 	}

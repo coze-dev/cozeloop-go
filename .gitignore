@@ -29,3 +29,4 @@ go.work.sum
 /output
 coverage.out
 /apb
+.coda/

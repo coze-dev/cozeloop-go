@@ -201,6 +201,56 @@ func validateVariableValuesType(variableDefs []*entity.VariableDef, variables ma
 			default:
 				return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be Message like object", variableDef.Key))
 			}
+		case entity.VariableTypeBoolean:
+			if _, ok := val.(bool); !ok {
+				return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be bool", variableDef.Key))
+			}
+		case entity.VariableTypeInteger:
+			if _, ok := val.(int); ok {
+				return nil
+			}
+			if _, ok := val.(int64); ok {
+				return nil
+			}
+			if _, ok := val.(int32); ok {
+				return nil
+			}
+			return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be int or int64 or int32", variableDef.Key))
+		case entity.VariableTypeFloat:
+			if _, ok := val.(float64); ok {
+				return nil
+			}
+			if _, ok := val.(float32); ok {
+				return nil
+			}
+			return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be float64 or float32", variableDef.Key))
+		case entity.VariableTypeArrayString:
+			if _, ok := val.([]string); !ok {
+				return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be []string", variableDef.Key))
+			}
+		case entity.VariableTypeArrayBoolean:
+			if _, ok := val.([]bool); !ok {
+				return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be []bool", variableDef.Key))
+			}
+		case entity.VariableTypeArrayInteger:
+			if _, ok := val.([]int); ok {
+				return nil
+			}
+			if _, ok := val.([]int64); ok {
+				return nil
+			}
+			if _, ok := val.([]int32); ok {
+				return nil
+			}
+			return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be []int or []int64 or []int32", variableDef.Key))
+		case entity.VariableTypeArrayFloat:
+			if _, ok := val.([]float64); ok {
+				return nil
+			}
+			if _, ok := val.([]float32); ok {
+				return nil
+			}
+			return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be []float64 or []float32", variableDef.Key))
 		}
 	}
 	return nil
@@ -274,6 +324,8 @@ func renderTextContent(templateType entity.TemplateType,
 			}
 			return 0, nil
 		}), nil
+	case entity.TemplateTypeJinja2:
+		return util.InterpolateJinja2(templateStr, variableVals)
 	default:
 		return "", consts.ErrInternal.Wrap(fmt.Errorf("unknown template type: %s", templateType))
 	}
