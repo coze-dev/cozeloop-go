@@ -38,6 +38,7 @@ type TemplateType string
 
 const (
 	TemplateTypeNormal TemplateType = "normal"
+	TemplateTypeJinja2 TemplateType = "jinja2"
 )
 
 type Message struct {
@@ -70,8 +71,17 @@ type VariableDef struct {
 type VariableType string
 
 const (
-	VariableTypeString      VariableType = "string"
-	VariableTypePlaceholder VariableType = "placeholder"
+	VariableTypeString       VariableType = "string"
+	VariableTypePlaceholder  VariableType = "placeholder"
+	VariableTypeBoolean      VariableType = "boolean"
+	VariableTypeInteger      VariableType = "integer"
+	VariableTypeFloat        VariableType = "float"
+	VariableTypeObject       VariableType = "object"
+	VariableTypeArrayString  VariableType = "array<string>"
+	VariableTypeArrayBoolean VariableType = "array<boolean>"
+	VariableTypeArrayInteger VariableType = "array<integer>"
+	VariableTypeArrayFloat   VariableType = "array<float>"
+	VariableTypeArrayObject  VariableType = "array<object>"
 )
 
 type ToolChoiceType string
