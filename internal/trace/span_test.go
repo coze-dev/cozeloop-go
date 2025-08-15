@@ -129,7 +129,7 @@ func Test_Finish(t *testing.T) {
 	httpClient := httpclient.NewClient("", nil, nil, nil)
 	s := &Span{
 		isFinished:    0,
-		spanProcessor: NewBatchSpanProcessor(httpClient),
+		spanProcessor: NewBatchSpanProcessor(nil, httpClient, nil, nil),
 		lock:          sync.RWMutex{},
 		TagMap:        make(map[string]interface{}),
 	}

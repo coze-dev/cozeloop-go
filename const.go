@@ -5,6 +5,7 @@ package cozeloop
 
 import (
 	"github.com/coze-dev/cozeloop-go/internal/consts"
+	"github.com/coze-dev/cozeloop-go/internal/trace"
 )
 
 const (
@@ -19,3 +20,24 @@ const (
 	// ComBaseURL = consts.ComBaseURL
 	CnBaseURL = consts.CnBaseURL
 )
+
+// SpanFinishEvent finish inner event
+type SpanFinishEvent consts.SpanFinishEvent
+
+const (
+	SpanFinishEventSpanQueueEntryRate = SpanFinishEvent(consts.SpanFinishEventSpanQueueEntryRate)
+	SpanFinishEventFileQueueEntryRate = SpanFinishEvent(consts.SpanFinishEventFileQueueEntryRate)
+	SpanFinishEventFlushSpanRate      = SpanFinishEvent(consts.SpanFinishEventFlushSpanRate)
+	SpanFinishEventFlushFileRate      = SpanFinishEvent(consts.SpanFinishEventFlushFileRate)
+)
+
+type FinishEventInfo consts.FinishEventInfo
+
+type TagTruncateConf trace.TagTruncateConf
+
+type APIBasePath struct {
+	TraceSpanUploadPath string
+	TraceFileUploadPath string
+}
+
+type TraceQueueConf trace.QueueConf
