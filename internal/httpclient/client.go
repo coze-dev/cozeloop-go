@@ -203,6 +203,11 @@ func setAuthorizationHeader(ctx context.Context, request *http.Request, auth Aut
 }
 
 func parseResponse(ctx context.Context, url string, response *http.Response, resp OpenAPIResponse) error {
+	if response == nil {
+		return nil
+	}
+	defer response.Body.Close()
+
 	logID := response.Header.Get(consts.LogIDHeader)
 	respBody, err := io.ReadAll(response.Body)
 	if err != nil {

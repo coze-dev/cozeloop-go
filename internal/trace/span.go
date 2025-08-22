@@ -55,9 +55,12 @@ type Span struct {
 	Name     string
 
 	// These params can be changed, but remember locking when changed
+	ServiceName  string
+	LogID        string
 	WorkspaceID  string
 	ParentSpanID string
 	StartTime    time.Time
+	FinishTime   time.Time
 	Duration     time.Duration
 	TagMap       map[string]interface{} // custom tags
 	SystemTagMap map[string]interface{} // system tags
@@ -71,7 +74,13 @@ type Span struct {
 	flags                  byte  // for W3C, useless now
 	isFinished             int32 // avoid executing finish repeatedly.
 	lock                   sync.RWMutex
-	bytesSize              int64 // bytes size of span, note: it is an estimated value, may not be accurate.
+	bytesSize              int64            // bytes size of span, note: it is an estimated value, may not be accurate.
+	tagTruncateConf        *TagTruncateConf // tag truncate byte conf
+}
+
+type TagTruncateConf struct {
+	NormalFieldMaxByte      int
+	InputOutputFieldMaxByte int
 }
 
 func (s *Span) setCutOffTag(cutOffKeys []string) {
@@ -639,7 +648,7 @@ func (s *Span) GetRectifiedMap(ctx context.Context, inputMap map[string]interfac
 			value = valueStr
 		}
 		// Truncate the value if a single tag's value is too large
-		tagValueLengthLimit := util.GetTagValueSizeLimit(key)
+		tagValueLengthLimit := s.getTagValueSizeLimit(key)
 		isUltraLargeReport := false
 		v, isTruncate := util.TruncateStringByByte(valueStr, tagValueLengthLimit)
 		if isTruncate {
@@ -670,6 +679,23 @@ func (s *Span) GetRectifiedMap(ctx context.Context, inputMap map[string]interfac
 
 	}
 	return validateMap, cutOffKeys, bytesSize
+}
+
+func (s *Span) getTagValueSizeLimit(tagKey string) int {
+	limit := util.GetTagValueSizeLimit(tagKey)
+
+	switch tagKey {
+	case tracespec.Input, tracespec.Output:
+		if s.tagTruncateConf != nil && s.tagTruncateConf.InputOutputFieldMaxByte > 0 {
+			limit = s.tagTruncateConf.InputOutputFieldMaxByte
+		}
+	default:
+		if s.tagTruncateConf != nil && s.tagTruncateConf.NormalFieldMaxByte > 0 {
+			limit = s.tagTruncateConf.NormalFieldMaxByte
+		}
+	}
+
+	return limit
 }
 
 func isTagValidDataType(key string, value interface{}) bool {
@@ -828,8 +854,12 @@ func (s *Span) setStatInfo(ctx context.Context) {
 		s.SetTags(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
 	}
 
-	// Duration = now - start_time, unit: microseconds
-	duration := time.Now().UnixNano()/1000 - s.GetStartTime().UnixNano()/1000
+	// Duration = finish_time - start_time, unit: microseconds
+	finishTime := time.Now()
+	if !s.GetFinishTime().IsZero() {
+		finishTime = s.GetFinishTime()
+	}
+	duration := finishTime.UnixNano()/1000 - s.GetStartTime().UnixNano()/1000
 	s.lock.Lock()
 	s.Duration = time.Duration(duration)
 	s.lock.Unlock()
@@ -841,6 +871,22 @@ func (s *Span) GetStartTime() time.Time {
 	}
 
 	return s.StartTime
+}
+
+func (s *Span) GetLogID() string {
+	if s == nil {
+		return ""
+	}
+
+	return s.LogID
+}
+
+func (s *Span) GetServiceName() string {
+	if s == nil {
+		return ""
+	}
+
+	return s.ServiceName
 }
 
 func (s *Span) ToHeader() (map[string]string, error) {
@@ -885,7 +931,58 @@ func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
 	if s.SystemTagMap == nil {
 		s.SystemTagMap = make(map[string]interface{})
 	}
+	runtime.Scene = tracespec.VSceneCustom
 	s.lock.Lock()
 	s.SystemTagMap[tracespec.Runtime_] = runtime
 	s.lock.Unlock()
+}
+
+func (s *Span) SetServiceName(ctx context.Context, serviceName string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.ServiceName = serviceName
+}
+
+func (s *Span) SetLogID(ctx context.Context, logID string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.LogID = logID
+}
+
+func (s *Span) IsRootSpan() bool {
+	return s.ParentSpanID == "" || s.ParentSpanID == "0"
+}
+
+// SetFinishTime
+// Default is time.Now() when span Finish(). DO NOT set unless you do not use default time.
+func (s *Span) SetFinishTime(finishTime time.Time) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.FinishTime = finishTime
+}
+
+func (s *Span) GetFinishTime() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+
+	return s.FinishTime
+}
+
+func (s *Span) SetSystemTags(ctx context.Context, systemTags map[string]interface{}) {
+	if s == nil {
+		return
+	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for key, value := range systemTags {
+		s.SystemTagMap[key] = value
+	}
+}
+
+func (s *Span) SetDeploymentEnv(ctx context.Context, deploymentEnv string) {
+	if s == nil {
+		return
+	}
+	s.SetTags(ctx, oneTag(consts.DeploymentEnv, deploymentEnv))
 }

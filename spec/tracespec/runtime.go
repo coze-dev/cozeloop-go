@@ -12,4 +12,7 @@ type Runtime struct {
 	// Dependency Versions.
 	LibraryVersion string `json:"library_version,omitempty"`
 	LoopSDKVersion string `json:"loop_sdk_version,omitempty"`
+
+	// Extra info.
+	Extra map[string]interface{} `json:"extra,omitempty"`
 }

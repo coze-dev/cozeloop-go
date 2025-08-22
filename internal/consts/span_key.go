@@ -10,6 +10,7 @@ const (
 	ThreadID           = "thread_id"
 	StartTimeFirstResp = "start_time_first_resp"
 	LatencyFirstResp   = "latency_first_resp"
+	DeploymentEnv      = "deployment_env"
 
 	CutOff = "cut_off"
 )
