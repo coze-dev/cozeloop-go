@@ -6,6 +6,7 @@ package prompt
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -1232,6 +1233,774 @@ func TestDoPromptFormat(t *testing.T) {
 			So(*messages[0].Content, ShouldEqual, "System prompt")
 			So(messages[1].Role, ShouldEqual, entity.RoleUser)
 			So(*messages[1].Content, ShouldEqual, "User message")
+		})
+	})
+}
+func TestValidateVariableValuesType_ExtendedTypes(t *testing.T) {
+	Convey("Test validateVariableValuesType for extended types", t, func() {
+		Convey("When variable type is boolean", func() {
+			Convey("Valid bool value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeBoolean,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": true})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-bool value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeBoolean,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": "not a bool"})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be bool")
+			})
+		})
+
+		Convey("When variable type is integer", func() {
+			Convey("Valid int value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": 42})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid int64 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": int64(42)})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid int32 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": int32(42)})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-integer value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": "not an int"})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be int or int64 or int32")
+			})
+		})
+
+		Convey("When variable type is float", func() {
+			Convey("Valid float64 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": 3.14})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid float32 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": float32(3.14)})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-float value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": "not a float"})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be float64 or float32")
+			})
+		})
+
+		Convey("When variable type is array string", func() {
+			Convey("Valid []string value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayString,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []string{"a", "b", "c"}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-[]string value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayString,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []int{1, 2, 3}})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be []string")
+			})
+		})
+
+		Convey("When variable type is array boolean", func() {
+			Convey("Valid []bool value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayBoolean,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []bool{true, false, true}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-[]bool value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayBoolean,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []string{"true", "false"}})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be []bool")
+			})
+		})
+
+		Convey("When variable type is array integer", func() {
+			Convey("Valid []int value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []int{1, 2, 3}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid []int64 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []int64{1, 2, 3}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid []int32 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []int32{1, 2, 3}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-[]int value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayInteger,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []string{"1", "2", "3"}})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be []int or []int64 or []int32")
+			})
+		})
+
+		Convey("When variable type is array float", func() {
+			Convey("Valid []float64 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []float64{1.1, 2.2, 3.3}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Valid []float32 value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []float32{1.1, 2.2, 3.3}})
+				So(err, ShouldBeNil)
+			})
+
+			Convey("Invalid non-[]float value", func() {
+				variableDefs := []*entity.VariableDef{
+					{
+						Key:  "key1",
+						Type: entity.VariableTypeArrayFloat,
+					},
+				}
+				err := validateVariableValuesType(variableDefs, map[string]any{"key1": []string{"1.1", "2.2", "3.3"}})
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'key1' should be []float64 or []float32")
+			})
+		})
+
+		Convey("When mixing different variable types", func() {
+			variableDefs := []*entity.VariableDef{
+				{
+					Key:  "str_var",
+					Type: entity.VariableTypeString,
+				},
+				{
+					Key:  "bool_var",
+					Type: entity.VariableTypeBoolean,
+				},
+				{
+					Key:  "int_var",
+					Type: entity.VariableTypeInteger,
+				},
+				{
+					Key:  "float_var",
+					Type: entity.VariableTypeFloat,
+				},
+				{
+					Key:  "arr_str_var",
+					Type: entity.VariableTypeArrayString,
+				},
+			}
+			variables := map[string]any{
+				"str_var":     "hello",
+				"bool_var":    true,
+				"int_var":     42,
+				"float_var":   3.14,
+				"arr_str_var": []string{"a", "b"},
+			}
+			err := validateVariableValuesType(variableDefs, variables)
+			So(err, ShouldBeNil)
+		})
+	})
+}
+
+func TestRenderTextContent_Jinja2(t *testing.T) {
+	Convey("Test renderTextContent function with Jinja2 template type", t, func() {
+		Convey("When template type is Jinja2", func() {
+			Convey("Basic Jinja2 template rendering", func() {
+				template := "Hello {{ name }}"
+				variableDefs := map[string]*entity.VariableDef{
+					"name": {
+						Key:  "name",
+						Type: entity.VariableTypeString,
+					},
+				}
+				variables := map[string]any{"name": "world"}
+
+				result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(result, ShouldEqual, "Hello world")
+			})
+
+			Convey("Jinja2 with conditional logic", func() {
+				template := "{% if active %}User is active{% else %}User is inactive{% endif %}"
+				variableDefs := map[string]*entity.VariableDef{
+					"active": {
+						Key:  "active",
+						Type: entity.VariableTypeBoolean,
+					},
+				}
+				variables := map[string]any{"active": true}
+
+				result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(result, ShouldEqual, "User is active")
+			})
+
+			Convey("Jinja2 with loop", func() {
+				template := "Items: {% for item in items %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}"
+				variableDefs := map[string]*entity.VariableDef{
+					"items": {
+						Key:  "items",
+						Type: entity.VariableTypeArrayString,
+					},
+				}
+				variables := map[string]any{"items": []string{"apple", "banana", "cherry"}}
+
+				result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(result, ShouldEqual, "Items: apple, banana, cherry")
+			})
+
+			Convey("Jinja2 template error handling", func() {
+				template := "Hello {{ undefined_variable.property }}" // Runtime error
+				variableDefs := map[string]*entity.VariableDef{
+					"name": {
+						Key:  "name",
+						Type: entity.VariableTypeString,
+					},
+				}
+				variables := map[string]any{"name": "world"}
+
+				result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldNotBeNil)
+				So(result, ShouldEqual, "")
+				So(err.Error(), ShouldContainSubstring, "template render error")
+			})
+		})
+
+		Convey("Comparison between Normal and Jinja2 templates", func() {
+			Convey("Normal template behavior", func() {
+				template := "Hello {{name}}"
+				variableDefs := map[string]*entity.VariableDef{
+					"name": {
+						Key:  "name",
+						Type: entity.VariableTypeString,
+					},
+				}
+				variables := map[string]any{"name": "world"}
+
+				result, err := renderTextContent(entity.TemplateTypeNormal, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(result, ShouldEqual, "Hello world")
+			})
+
+			Convey("Jinja2 template behavior with same input", func() {
+				template := "Hello {{ name }}"
+				variableDefs := map[string]*entity.VariableDef{
+					"name": {
+						Key:  "name",
+						Type: entity.VariableTypeString,
+					},
+				}
+				variables := map[string]any{"name": "world"}
+
+				result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(result, ShouldEqual, "Hello world")
+			})
+
+			Convey("Different behavior with complex syntax", func() {
+				// Normal template doesn't support conditional logic
+				template := "{% if active %}Active{% else %}Inactive{% endif %}"
+				variableDefs := map[string]*entity.VariableDef{
+					"active": {
+						Key:  "active",
+						Type: entity.VariableTypeBoolean,
+					},
+				}
+				variables := map[string]any{"active": true}
+
+				// Normal template treats this as literal text
+				normalResult, err := renderTextContent(entity.TemplateTypeNormal, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(normalResult, ShouldEqual, template) // Should remain unchanged
+
+				// Jinja2 template processes the conditional
+				jinja2Result, err := renderTextContent(entity.TemplateTypeJinja2, template, variableDefs, variables)
+				So(err, ShouldBeNil)
+				So(jinja2Result, ShouldEqual, "Active")
+			})
+		})
+	})
+}
+
+func TestPromptFormat_Jinja2Integration(t *testing.T) {
+	ctx := context.Background()
+	httpClient := &httpclient.Client{}
+	traceProvider := &trace.Provider{}
+	options := Options{
+		WorkspaceID:                "workspace1",
+		PromptCacheMaxCount:        100,
+		PromptCacheRefreshInterval: time.Minute,
+		PromptTrace:                false,
+	}
+	provider := NewPromptProvider(httpClient, traceProvider, options)
+
+	Convey("Test PromptFormat method with Jinja2 integration", t, func() {
+		Convey("Basic Jinja2 template formatting", func() {
+			content := "Hello {{ name }}"
+			prompt := &entity.Prompt{
+				WorkspaceID: "workspace1",
+				PromptKey:   "key1",
+				Version:     "1.0",
+				PromptTemplate: &entity.PromptTemplate{
+					TemplateType: entity.TemplateTypeJinja2,
+					Messages: []*entity.Message{
+						{
+							Role:    entity.RoleSystem,
+							Content: &content,
+						},
+					},
+					VariableDefs: []*entity.VariableDef{
+						{
+							Key:  "name",
+							Type: entity.VariableTypeString,
+						},
+					},
+				},
+			}
+			variables := map[string]any{"name": "world"}
+
+			messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+			So(err, ShouldBeNil)
+			So(messages, ShouldNotBeNil)
+			So(len(messages), ShouldEqual, 1)
+			So(*messages[0].Content, ShouldEqual, "Hello world")
+		})
+
+		Convey("Jinja2 with multiple variable types", func() {
+			systemContent := "User {{ name }} ({{ age }} years old) is {% if active %}active{% else %}inactive{% endif %}"
+			userContent := "My scores: {% for score in scores %}{{ score }}{% if not loop.last %}, {% endif %}{% endfor %}"
+			prompt := &entity.Prompt{
+				WorkspaceID: "workspace1",
+				PromptKey:   "key1",
+				Version:     "1.0",
+				PromptTemplate: &entity.PromptTemplate{
+					TemplateType: entity.TemplateTypeJinja2,
+					Messages: []*entity.Message{
+						{
+							Role:    entity.RoleSystem,
+							Content: &systemContent,
+						},
+						{
+							Role:    entity.RoleUser,
+							Content: &userContent,
+						},
+					},
+					VariableDefs: []*entity.VariableDef{
+						{
+							Key:  "name",
+							Type: entity.VariableTypeString,
+						},
+						{
+							Key:  "age",
+							Type: entity.VariableTypeInteger,
+						},
+						{
+							Key:  "active",
+							Type: entity.VariableTypeBoolean,
+						},
+						{
+							Key:  "scores",
+							Type: entity.VariableTypeArrayInteger,
+						},
+					},
+				},
+			}
+			variables := map[string]any{
+				"name":   "Alice",
+				"age":    30,
+				"active": true,
+				"scores": []int{85, 92, 78},
+			}
+
+			messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+			So(err, ShouldBeNil)
+			So(messages, ShouldNotBeNil)
+			So(len(messages), ShouldEqual, 2)
+			So(*messages[0].Content, ShouldEqual, "User Alice (30 years old) is active")
+			So(*messages[1].Content, ShouldEqual, "My scores: 85, 92, 78")
+		})
+
+		Convey("Jinja2 with complex logic", func() {
+			content := `{% if user.role == "admin" %}
+Welcome, Administrator {{ user.name }}!
+Your permissions: {% for perm in user.permissions %}{{ perm }}{% if not loop.last %}, {% endif %}{% endfor %}
+{% elif user.role == "user" %}
+Hello, {{ user.name }}!
+{% else %}
+Access denied.
+{% endif %}`
+			prompt := &entity.Prompt{
+				WorkspaceID: "workspace1",
+				PromptKey:   "key1",
+				Version:     "1.0",
+				PromptTemplate: &entity.PromptTemplate{
+					TemplateType: entity.TemplateTypeJinja2,
+					Messages: []*entity.Message{
+						{
+							Role:    entity.RoleSystem,
+							Content: &content,
+						},
+					},
+					VariableDefs: []*entity.VariableDef{
+						{
+							Key:  "user",
+							Type: entity.VariableTypeObject,
+						},
+					},
+				},
+			}
+			variables := map[string]any{
+				"user": map[string]any{
+					"role":        "admin",
+					"name":        "Alice",
+					"permissions": []string{"read", "write", "delete"},
+				},
+			}
+
+			messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+			So(err, ShouldBeNil)
+			So(messages, ShouldNotBeNil)
+			So(len(messages), ShouldEqual, 1)
+			So(*messages[0].Content, ShouldContainSubstring, "Welcome, Administrator Alice!")
+			So(*messages[0].Content, ShouldContainSubstring, "read, write, delete")
+		})
+
+		Convey("Jinja2 with placeholder messages", func() {
+			systemContent := "System: {{ system_msg }}"
+			placeholderContent := "conversation_history"
+			prompt := &entity.Prompt{
+				WorkspaceID: "workspace1",
+				PromptKey:   "key1",
+				Version:     "1.0",
+				PromptTemplate: &entity.PromptTemplate{
+					TemplateType: entity.TemplateTypeJinja2,
+					Messages: []*entity.Message{
+						{
+							Role:    entity.RoleSystem,
+							Content: &systemContent,
+						},
+						{
+							Role:    entity.RolePlaceholder,
+							Content: &placeholderContent,
+						},
+					},
+					VariableDefs: []*entity.VariableDef{
+						{
+							Key:  "system_msg",
+							Type: entity.VariableTypeString,
+						},
+						{
+							Key:  "conversation_history",
+							Type: entity.VariableTypePlaceholder,
+						},
+					},
+				},
+			}
+
+			userContent1 := "First user message"
+			userContent2 := "Second user message"
+			variables := map[string]any{
+				"system_msg": "You are a helpful assistant",
+				"conversation_history": []*entity.Message{
+					{
+						Role:    entity.RoleUser,
+						Content: &userContent1,
+					},
+					{
+						Role:    entity.RoleUser,
+						Content: &userContent2,
+					},
+				},
+			}
+
+			messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+			So(err, ShouldBeNil)
+			So(messages, ShouldNotBeNil)
+			So(len(messages), ShouldEqual, 3)
+			So(*messages[0].Content, ShouldEqual, "System: You are a helpful assistant")
+			So(*messages[1].Content, ShouldEqual, "First user message")
+			So(*messages[2].Content, ShouldEqual, "Second user message")
+		})
+
+		Convey("Error handling in Jinja2 integration", func() {
+			Convey("Invalid Jinja2 template syntax", func() {
+				content := "Hello {{ undefined_variable.property }}" // Runtime error
+				prompt := &entity.Prompt{
+					WorkspaceID: "workspace1",
+					PromptKey:   "key1",
+					Version:     "1.0",
+					PromptTemplate: &entity.PromptTemplate{
+						TemplateType: entity.TemplateTypeJinja2,
+						Messages: []*entity.Message{
+							{
+								Role:    entity.RoleSystem,
+								Content: &content,
+							},
+						},
+						VariableDefs: []*entity.VariableDef{
+							{
+								Key:  "name",
+								Type: entity.VariableTypeString,
+							},
+						},
+					},
+				}
+				variables := map[string]any{"name": "world"}
+
+				messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+				So(err, ShouldNotBeNil)
+				So(messages, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "template render error")
+			})
+
+			Convey("Variable type validation failure with Jinja2", func() {
+				content := "Hello {{ name }}"
+				prompt := &entity.Prompt{
+					WorkspaceID: "workspace1",
+					PromptKey:   "key1",
+					Version:     "1.0",
+					PromptTemplate: &entity.PromptTemplate{
+						TemplateType: entity.TemplateTypeJinja2,
+						Messages: []*entity.Message{
+							{
+								Role:    entity.RoleSystem,
+								Content: &content,
+							},
+						},
+						VariableDefs: []*entity.VariableDef{
+							{
+								Key:  "name",
+								Type: entity.VariableTypeString,
+							},
+						},
+					},
+				}
+				variables := map[string]any{"name": 123} // Should be string
+
+				messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+				So(err, ShouldNotBeNil)
+				So(messages, ShouldBeNil)
+				So(err.Error(), ShouldContainSubstring, "type of variable 'name' should be string")
+			})
+		})
+
+		Convey("Performance and edge cases", func() {
+			Convey("Large template with many variables", func() {
+				content := "Users: {% for user in users %}{{ user.name }} ({{ user.age }}){% if not loop.last %}, {% endif %}{% endfor %}"
+				prompt := &entity.Prompt{
+					WorkspaceID: "workspace1",
+					PromptKey:   "key1",
+					Version:     "1.0",
+					PromptTemplate: &entity.PromptTemplate{
+						TemplateType: entity.TemplateTypeJinja2,
+						Messages: []*entity.Message{
+							{
+								Role:    entity.RoleSystem,
+								Content: &content,
+							},
+						},
+						VariableDefs: []*entity.VariableDef{
+							{
+								Key:  "users",
+								Type: entity.VariableTypeArrayObject,
+							},
+						},
+					},
+				}
+
+				// Create a large array of users
+				users := make([]map[string]any, 100)
+				for i := 0; i < 100; i++ {
+					users[i] = map[string]any{
+						"name": fmt.Sprintf("User%d", i+1),
+						"age":  20 + i%50,
+					}
+				}
+				variables := map[string]any{"users": users}
+
+				messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+				So(err, ShouldBeNil)
+				So(messages, ShouldNotBeNil)
+				So(len(messages), ShouldEqual, 1)
+				So(*messages[0].Content, ShouldContainSubstring, "User1 (20)")
+				So(*messages[0].Content, ShouldContainSubstring, "User100 (69)")
+			})
+
+			Convey("Empty variables with Jinja2", func() {
+				content := "Hello {% if name %}{{ name }}{% else %}Guest{% endif %}"
+				prompt := &entity.Prompt{
+					WorkspaceID: "workspace1",
+					PromptKey:   "key1",
+					Version:     "1.0",
+					PromptTemplate: &entity.PromptTemplate{
+						TemplateType: entity.TemplateTypeJinja2,
+						Messages: []*entity.Message{
+							{
+								Role:    entity.RoleSystem,
+								Content: &content,
+							},
+						},
+						VariableDefs: []*entity.VariableDef{
+							{
+								Key:  "name",
+								Type: entity.VariableTypeString,
+							},
+						},
+					},
+				}
+				variables := map[string]any{} // No name provided
+
+				messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+				So(err, ShouldBeNil)
+				So(messages, ShouldNotBeNil)
+				So(len(messages), ShouldEqual, 1)
+				So(*messages[0].Content, ShouldEqual, "Hello Guest")
+			})
+
+			Convey("Special characters in Jinja2 template", func() {
+				content := `{{ message|replace("'", "''") }}`
+				prompt := &entity.Prompt{
+					WorkspaceID: "workspace1",
+					PromptKey:   "key1",
+					Version:     "1.0",
+					PromptTemplate: &entity.PromptTemplate{
+						TemplateType: entity.TemplateTypeJinja2,
+						Messages: []*entity.Message{
+							{
+								Role:    entity.RoleSystem,
+								Content: &content,
+							},
+						},
+						VariableDefs: []*entity.VariableDef{
+							{
+								Key:  "message",
+								Type: entity.VariableTypeString,
+							},
+						},
+					},
+				}
+				variables := map[string]any{"message": "It's a test"}
+
+				messages, err := provider.PromptFormat(ctx, prompt, variables, PromptFormatOptions{})
+				So(err, ShouldBeNil)
+				So(messages, ShouldNotBeNil)
+				So(len(messages), ShouldEqual, 1)
+				So(*messages[0].Content, ShouldEqual, "It''s a test")
+			})
 		})
 	})
 }

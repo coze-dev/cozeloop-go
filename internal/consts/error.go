@@ -16,6 +16,7 @@ var (
 	ErrAuthInfoRequired = NewError("api token or jwt oauth info is required")
 	ErrParsePrivateKey  = NewError("failed to parse private key")
 	ErrHeaderParent     = NewError("header traceparent is illegal")
+	ErrTemplateRender   = NewError("template render error")
 )
 
 type LoopError struct {
