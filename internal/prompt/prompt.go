@@ -322,20 +322,8 @@ func formatMultiPart(templateType entity.TemplateType,
 			if vardef, ok := defMap[multiPartVariableKey]; ok {
 				if value, ok := valMap[multiPartVariableKey]; ok {
 					if vardef != nil && value != nil && vardef.Type == entity.VariableTypeMultiPart {
-						multiPartValues, ok := value.([]*entity.ContentPart)
-						if ok {
-							var filtered []*entity.ContentPart
-							for _, pt := range multiPartValues {
-								if pt == nil {
-									continue
-								}
-								if util.PtrValue(pt.Text) != "" || pt.ImageURL != nil {
-									filtered = append(filtered, pt)
-								}
-							}
-							if len(filtered) > 0 {
-								formatedParts = append(formatedParts, filtered...)
-							}
+						if multiPartValues, ok := value.([]*entity.ContentPart); ok {
+							formatedParts = append(formatedParts, multiPartValues...)
 						}
 					}
 				}
@@ -344,7 +332,17 @@ func formatMultiPart(templateType entity.TemplateType,
 			formatedParts = append(formatedParts, part)
 		}
 	}
-	return formatedParts
+	// fileter
+	var filtered []*entity.ContentPart
+	for _, pt := range formatedParts {
+		if pt == nil {
+			continue
+		}
+		if util.PtrValue(pt.Text) != "" || pt.ImageURL != nil {
+			filtered = append(filtered, pt)
+		}
+	}
+	return filtered
 }
 
 func formatPlaceholderMessages(messages []*entity.Message, variableVals map[string]any) (results []*entity.Message, err error) {
