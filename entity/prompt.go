@@ -29,8 +29,9 @@ const (
 )
 
 type Message struct {
-	Role    Role    `json:"role"`
-	Content *string `json:"content,omitempty"`
+	Role    Role           `json:"role"`
+	Content *string        `json:"content,omitempty"`
+	Parts   []*ContentPart `json:"parts,omitempty"`
 }
 
 type Role string
@@ -42,6 +43,24 @@ const (
 	RoleTool        Role = "tool"
 	RolePlaceholder Role = "placeholder"
 )
+
+type ContentPart struct {
+	Type     ContentType `json:"type"`
+	Text     *string     `json:"text,omitempty"`
+	ImageURL *ImageURL   `json:"image_url,omitempty"`
+}
+
+type ContentType string
+
+const (
+	ContentTypeText              ContentType = "text"
+	ContentTypeImageURL          ContentType = "image_url"
+	ContentTypeMultiPartVariable ContentType = "multi_part_variable"
+)
+
+type ImageURL struct {
+	URL string `json:"url"`
+}
 
 type ToolType string
 
@@ -69,6 +88,7 @@ const (
 	VariableTypeArrayInteger VariableType = "array<integer>"
 	VariableTypeArrayFloat   VariableType = "array<float>"
 	VariableTypeArrayObject  VariableType = "array<object>"
+	VariableTypeMultiPart    VariableType = "multi_part"
 )
 
 type ToolChoiceType string
@@ -142,7 +162,47 @@ func (m *Message) DeepCopy() *Message {
 	if m.Content != nil {
 		copied.Content = util.Ptr(*m.Content)
 	}
+	if m.Parts != nil {
+		copied.Parts = deepCopyContentParts(m.Parts)
+	}
 	return copied
+}
+
+func deepCopyContentParts(parts []*ContentPart) []*ContentPart {
+	if parts == nil {
+		return nil
+	}
+
+	copied := make([]*ContentPart, len(parts))
+	for i, part := range parts {
+		copied[i] = part.DeepCopy()
+	}
+	return copied
+}
+
+func (cp *ContentPart) DeepCopy() *ContentPart {
+	if cp == nil {
+		return nil
+	}
+	copied := &ContentPart{
+		Type: cp.Type,
+	}
+	if cp.Text != nil {
+		copied.Text = util.Ptr(*cp.Text)
+	}
+	if cp.ImageURL != nil {
+		copied.ImageURL = cp.ImageURL.DeepCopy()
+	}
+	return copied
+}
+
+func (iu *ImageURL) DeepCopy() *ImageURL {
+	if iu == nil {
+		return nil
+	}
+	return &ImageURL{
+		URL: iu.URL,
+	}
 }
 
 func (v *VariableDef) DeepCopy() *VariableDef {

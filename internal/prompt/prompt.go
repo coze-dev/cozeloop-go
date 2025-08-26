@@ -251,6 +251,10 @@ func validateVariableValuesType(variableDefs []*entity.VariableDef, variables ma
 				return nil
 			}
 			return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be []float64 or []float32", variableDef.Key))
+		case entity.VariableTypeMultiPart:
+			if _, ok := val.([]*entity.ContentPart); !ok {
+				return consts.ErrInvalidParam.Wrap(fmt.Errorf("type of variable '%s' should be multi_part", variableDef.Key))
+			}
 		}
 	}
 	return nil
@@ -283,9 +287,64 @@ func formatNormalMessages(templateType entity.TemplateType,
 			}
 			message.Content = util.Ptr(renderedContent)
 		}
+		// render parts
+		message.Parts = formatMultiPart(templateType, message.Parts, variableDefMap, variableVals)
 		results = append(results, message)
 	}
 	return results, nil
+}
+
+func formatMultiPart(templateType entity.TemplateType,
+	parts []*entity.ContentPart,
+	defMap map[string]*entity.VariableDef,
+	valMap map[string]any) []*entity.ContentPart {
+	var formatedParts []*entity.ContentPart
+	// render text
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		if part.Type == entity.ContentTypeText && util.PtrValue(part.Text) != "" {
+			renderedText, err := renderTextContent(templateType, util.PtrValue(part.Text), defMap, valMap)
+			if err != nil {
+				return nil
+			}
+			part.Text = util.Ptr(renderedText)
+		}
+	}
+	// render multipart variable
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		if part.Type == entity.ContentTypeMultiPartVariable && util.PtrValue(part.Text) != "" {
+			multiPartVariableKey := util.PtrValue(part.Text)
+			if vardef, ok := defMap[multiPartVariableKey]; ok {
+				if value, ok := valMap[multiPartVariableKey]; ok {
+					if vardef != nil && value != nil && vardef.Type == entity.VariableTypeMultiPart {
+						multiPartValues, ok := value.([]*entity.ContentPart)
+						if ok {
+							var filtered []*entity.ContentPart
+							for _, pt := range multiPartValues {
+								if pt == nil {
+									continue
+								}
+								if util.PtrValue(pt.Text) != "" || pt.ImageURL != nil {
+									filtered = append(filtered, pt)
+								}
+							}
+							if len(filtered) > 0 {
+								formatedParts = append(formatedParts, filtered...)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			formatedParts = append(formatedParts, part)
+		}
+	}
+	return formatedParts
 }
 
 func formatPlaceholderMessages(messages []*entity.Message, variableVals map[string]any) (results []*entity.Message, err error) {

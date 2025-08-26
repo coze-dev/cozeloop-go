@@ -49,9 +49,45 @@ func toModelMessages(messages []*Message) []*entity.Message {
 		result[i] = &entity.Message{
 			Role:    toModelRole(msg.Role),
 			Content: msg.Content,
+			Parts:   toContentParts(msg.Parts),
 		}
 	}
 	return result
+}
+
+func toContentParts(dos []*ContentPart) []*entity.ContentPart {
+	if dos == nil {
+		return nil
+	}
+	parts := make([]*entity.ContentPart, 0, len(dos))
+	for _, do := range dos {
+		if do == nil {
+			continue
+		}
+		parts = append(parts, toContentPart(do))
+	}
+	return parts
+}
+
+func toContentPart(do *ContentPart) *entity.ContentPart {
+	if do == nil {
+		return nil
+	}
+	return &entity.ContentPart{
+		Type: toContentType(util.PtrValue(do.Type)),
+		Text: do.Text,
+	}
+}
+
+func toContentType(do ContentType) entity.ContentType {
+	switch do {
+	case ContentTypeText:
+		return entity.ContentTypeText
+	case ContentTypeMultiPartVariable:
+		return entity.ContentTypeMultiPartVariable
+	default:
+		return entity.ContentTypeText
+	}
 }
 
 func toModelVariableDefs(defs []*VariableDef) []*entity.VariableDef {
@@ -185,6 +221,8 @@ func toModelVariableType(vt VariableType) entity.VariableType {
 		return entity.VariableTypeArrayBoolean
 	case VariableTypeArrayObject:
 		return entity.VariableTypeArrayObject
+	case VariableTypeMultiPart:
+		return entity.VariableTypeMultiPart
 	default:
 		return entity.VariableTypeString
 	}

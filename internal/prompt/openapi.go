@@ -42,8 +42,9 @@ const (
 )
 
 type Message struct {
-	Role    Role    `json:"role"`
-	Content *string `json:"content,omitempty"`
+	Role    Role           `json:"role"`
+	Content *string        `json:"content,omitempty"`
+	Parts   []*ContentPart `json:"parts,omitempty"`
 }
 
 type Role string
@@ -54,6 +55,18 @@ const (
 	RoleAssistant   Role = "assistant"
 	RoleTool        Role = "tool"
 	RolePlaceholder Role = "placeholder"
+)
+
+type ContentPart struct {
+	Type *ContentType `json:"type"`
+	Text *string      `json:"text,omitempty"`
+}
+
+type ContentType string
+
+const (
+	ContentTypeText              ContentType = "text"
+	ContentTypeMultiPartVariable ContentType = "multi_part_variable"
 )
 
 type ToolType string
@@ -82,6 +95,7 @@ const (
 	VariableTypeArrayInteger VariableType = "array<integer>"
 	VariableTypeArrayFloat   VariableType = "array<float>"
 	VariableTypeArrayObject  VariableType = "array<object>"
+	VariableTypeMultiPart    VariableType = "multi_part"
 )
 
 type ToolChoiceType string
