@@ -300,26 +300,46 @@ func TestOpenAPIClient_DoMPullPrompt(t *testing.T) {
 
 func TestHelperFunctions(t *testing.T) {
 	Convey("Test the parseCacheKey function", t, func() {
-		Convey("When key format is valid", func() {
-			key := "prompt_hub:key1:1.0"
-			promptKey, version, ok := parseCacheKey(key)
+		Convey("When key format is valid (new format)", func() {
+			key := "prompt_hub:key1:1.0:"
+			promptKey, version, label, ok := parseCacheKey(key)
 			So(ok, ShouldBeTrue)
 			So(promptKey, ShouldEqual, "key1")
 			So(version, ShouldEqual, "1.0")
+			So(label, ShouldEqual, "")
+		})
+
+		Convey("When key format is valid (new format with label)", func() {
+			key := "prompt_hub:key1:1.0:production"
+			promptKey, version, label, ok := parseCacheKey(key)
+			So(ok, ShouldBeTrue)
+			So(promptKey, ShouldEqual, "key1")
+			So(version, ShouldEqual, "1.0")
+			So(label, ShouldEqual, "production")
+		})
+
+		Convey("When key format is valid (old format - backward compatibility)", func() {
+			key := "prompt_hub:key1:1.0"
+			promptKey, version, label, ok := parseCacheKey(key)
+			So(ok, ShouldBeTrue)
+			So(promptKey, ShouldEqual, "key1")
+			So(version, ShouldEqual, "1.0")
+			So(label, ShouldEqual, "")
 		})
 
 		Convey("When key format is invalid", func() {
 			invalidKeys := []string{
-				"prompt_hub:key1", // missing version
+				"prompt_hub:key1", // missing version and label
 				"key1:1.0",        // missing prefix
 				"invalid",         // no separators
 			}
 
 			for _, key := range invalidKeys {
-				promptKey, version, ok := parseCacheKey(key)
+				promptKey, version, label, ok := parseCacheKey(key)
 				So(ok, ShouldBeFalse)
 				So(promptKey, ShouldEqual, "")
 				So(version, ShouldEqual, "")
+				So(label, ShouldEqual, "")
 			}
 		})
 	})
