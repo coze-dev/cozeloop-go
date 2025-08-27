@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/coze-dev/cozeloop-go"
@@ -32,13 +31,9 @@ func main() {
 	// COZELOOP_WORKSPACE_ID=your workspace id
 	// COZELOOP_API_TOKEN=your token
 	// 2.New loop client
-	os.Setenv("x_tt_env", "boe_prompt_label")
 	client, err := cozeloop.NewClient(
 		// Set whether to report a trace span when get or format prompt.
 		// Default value is false.
-		cozeloop.WithWorkspaceID("7344808233917693996"),
-		cozeloop.WithAPIBaseURL("https://api-bot-boe.bytedance.net"),
-		cozeloop.WithAPIToken("pat_iweTAuo0jJoYDOhfYyuI4Iixqc23dOmLtTTbEqksad4ZUC0eLbzHoN0qQaDJgAVv"),
 		cozeloop.WithPromptTrace(true))
 	if err != nil {
 		panic(err)
