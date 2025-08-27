@@ -1,4 +1,3 @@
-// start_aigc
 // Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 // SPDX-License-Identifier: MIT
 
@@ -229,5 +228,3 @@ func convertModelInput(messages []*entity.Message) *tracespec.ModelInput {
 		Messages: modelMessages,
 	}
 }
-
-// end_aigc
