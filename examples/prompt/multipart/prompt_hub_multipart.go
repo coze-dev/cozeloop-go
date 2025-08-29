@@ -62,7 +62,7 @@ func main() {
 	prompt, err := llmRunner.client.GetPrompt(ctx, cozeloop.GetPromptParam{
 		PromptKey: "image1",
 		// If version is not specified, the latest version of the corresponding prompt will be obtained
-		Version: "0.0.3",
+		Version: "0.0.4",
 	})
 	if err != nil {
 		fmt.Printf("get prompt failed: %v\n", err)
@@ -88,10 +88,8 @@ func main() {
 		}
 
 		// 4.Format messages of the prompt
-		userMessageContent := "Hello!"
-		assistantMessageContent := "Hello!"
 		imageText := "图片样例"
-		imageURL := "xxxxxxxxxxxxxx" //公网访问地址
+		imageURL := "https://dummyimage.com/600x400/4CAF50/fff&text=" //公网访问地址
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
 			"num":   "2",
 			"count": 10,
@@ -121,17 +119,6 @@ func main() {
 				},
 				{
 					Type: entity.ContentTypeText,
-				},
-			},
-			// Placeholder variable type should be entity.Message/*entity.Message/[]entity.Message/[]*entity.Message
-			"placeholder1": []*entity.Message{
-				{
-					Role:    entity.RoleUser,
-					Content: &userMessageContent,
-				},
-				{
-					Role:    entity.RoleAssistant,
-					Content: &assistantMessageContent,
 				},
 			},
 			// Other variables in the prompt template that are not provided with corresponding values will be considered as empty values
