@@ -257,10 +257,55 @@ func convertModelInput(messages []*entity.Message) *tracespec.ModelInput {
 		modelMessages = append(modelMessages, &tracespec.ModelMessage{
 			Role:    string(message.Role),
 			Content: util.PtrValue(message.Content),
+			Parts:   toSpanContentParts(message.Parts),
 		})
 	}
 
 	return &tracespec.ModelInput{
 		Messages: modelMessages,
+	}
+}
+
+func toSpanContentParts(parts []*entity.ContentPart) []*tracespec.ModelMessagePart {
+	if parts == nil {
+		return nil
+	}
+	var result []*tracespec.ModelMessagePart
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		result = append(result, toSpanContentPart(part))
+	}
+	return result
+}
+
+func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
+	if part == nil {
+		return nil
+	}
+	var imageURL *tracespec.ModelImageURL
+	if part.ImageURL != nil {
+		imageURL = &tracespec.ModelImageURL{
+			URL: part.ImageURL.URL,
+		}
+	}
+	return &tracespec.ModelMessagePart{
+		Type:     ToSpanPartType(part.Type),
+		Text:     util.PtrValue(part.Text),
+		ImageURL: imageURL,
+	}
+}
+
+func ToSpanPartType(partType entity.ContentType) tracespec.ModelMessagePartType {
+	switch partType {
+	case entity.ContentTypeText:
+		return tracespec.ModelMessagePartTypeText
+	case entity.ContentTypeImageURL:
+		return tracespec.ModelMessagePartTypeImage
+	case entity.ContentTypeMultiPartVariable:
+		return "multi_part_variable"
+	default:
+		return tracespec.ModelMessagePartType(partType)
 	}
 }
