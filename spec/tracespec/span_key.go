@@ -26,6 +26,7 @@ const (
 	PromptProvider = "prompt_provider" // Prompt providers, such as CozeLoop, Langsmith, etc.
 	PromptKey      = "prompt_key"
 	PromptVersion  = "prompt_version"
+	PromptLabel    = "prompt_label"
 )
 
 // Internal experimental field.
