@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/coze-dev/cozeloop-go"
@@ -41,15 +40,10 @@ func main() {
 	client, err := cozeloop.NewClient(
 		// Set whether to report a trace span when get or format prompt.
 		// Default value is false.
-		cozeloop.WithPromptTrace(true),
-		cozeloop.WithWorkspaceID("7496795200791511052"),
-		cozeloop.WithAPIToken("pat_MncpzaGch5UIHuModf3mv7S6IpNkG8uer265shnDPML8MRiG0gJrYoT9izOAOhdd"))
+		cozeloop.WithPromptTrace(true))
 	if err != nil {
 		panic(err)
 	}
-
-	os.Setenv("x_tt_env", "ppe_multipart")
-	os.Setenv("x_use_ppe", "1")
 
 	llmRunner := llmRunner{
 		client: client,
