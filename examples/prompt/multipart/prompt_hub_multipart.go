@@ -81,16 +81,6 @@ func main() {
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
 			"num":   "2",
 			"count": 10,
-			"format": map[string]interface{}{
-				"image1": map[string]interface{}{
-					"content1": "",
-					"content2": "",
-				},
-				"image2": map[string]interface{}{
-					"content1": "",
-					"content2": "",
-				},
-			},
 			"im1": []*entity.ContentPart{
 				{
 					Type: entity.ContentTypeText,
@@ -101,12 +91,6 @@ func main() {
 					ImageURL: &entity.ImageURL{
 						URL: imageURL,
 					},
-				},
-				{
-					Type: entity.ContentTypeImageURL,
-				},
-				{
-					Type: entity.ContentTypeText,
 				},
 			},
 		})
