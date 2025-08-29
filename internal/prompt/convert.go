@@ -250,12 +250,32 @@ func toSpanPromptInput(messages []*entity.Message, arguments map[string]any) *tr
 func toSpanArguments(arguments map[string]any) []*tracespec.PromptArgument {
 	var result []*tracespec.PromptArgument
 	for key, value := range arguments {
-		result = append(result, &tracespec.PromptArgument{
-			Key:   key,
-			Value: value,
-		})
+		result = append(result, toSpanArgument(key, value))
 	}
 	return result
+}
+
+func toSpanArgument(key string, value any) *tracespec.PromptArgument {
+	var convertedVal any
+	valueType := tracespec.PromptArgumentValueTypeText
+	convertedVal = util.ToJSON(value)
+	// 尝试解析是否是多模态变量
+	if parts, ok := value.([]*entity.ContentPart); ok {
+		convertedVal = toSpanContentParts(parts)
+		valueType = tracespec.PromptArgumentValueTypeMessagePart
+	}
+	// 尝试解析是否是placeholder
+	placeholderMessages, err := convertMessageLikeObjectToMessages(value)
+	if err == nil {
+		convertedVal = toSpanMessages(placeholderMessages)
+		valueType = tracespec.PromptArgumentValueTypeModelMessage
+	}
+	return &tracespec.PromptArgument{
+		Key:       key,
+		Value:     convertedVal,
+		ValueType: valueType,
+		Source:    "input",
+	}
 }
 
 func toSpanMessages(messages []*entity.Message) []*tracespec.ModelMessage {
@@ -273,5 +293,50 @@ func toSpanMessage(message *entity.Message) *tracespec.ModelMessage {
 	return &tracespec.ModelMessage{
 		Role:    string(message.Role),
 		Content: util.PtrValue(message.Content),
+		Parts:   toSpanContentParts(message.Parts),
+	}
+}
+
+func toSpanContentParts(parts []*entity.ContentPart) []*tracespec.ModelMessagePart {
+	if parts == nil {
+		return nil
+	}
+	var result []*tracespec.ModelMessagePart
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		result = append(result, toSpanContentPart(part))
+	}
+	return result
+}
+
+func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
+	if part == nil {
+		return nil
+	}
+	var imageURL *tracespec.ModelImageURL
+	if part.ImageURL != nil {
+		imageURL = &tracespec.ModelImageURL{
+			URL: part.ImageURL.URL,
+		}
+	}
+	return &tracespec.ModelMessagePart{
+		Type:     ToSpanPartType(part.Type),
+		Text:     util.PtrValue(part.Text),
+		ImageURL: imageURL,
+	}
+}
+
+func ToSpanPartType(partType entity.ContentType) tracespec.ModelMessagePartType {
+	switch partType {
+	case entity.ContentTypeText:
+		return tracespec.ModelMessagePartTypeText
+	case entity.ContentTypeImageURL:
+		return tracespec.ModelMessagePartTypeImage
+	case entity.ContentTypeMultiPartVariable:
+		return "multi_part_variable"
+	default:
+		return tracespec.ModelMessagePartType(partType)
 	}
 }
