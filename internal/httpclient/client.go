@@ -232,8 +232,8 @@ func parseResponse(ctx context.Context, url string, response *http.Response, res
 		return err
 	}
 
-	logger.CtxDebugf(ctx, "call remote service success, url: %v, response: %v",
-		url, string(respBody))
+	logger.CtxDebugf(ctx, "call remote service success, url: %v, response: %v, logID: %s",
+		url, string(respBody), logID)
 	return nil
 }
 
