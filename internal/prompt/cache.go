@@ -137,17 +137,17 @@ func (c *PromptCache) updateAllPrompts() {
 	// Update cache
 	for _, p := range promptResults {
 		if p != nil {
-			c.Set(p.Query.PromptKey, p.Query.Version, toModelPrompt(p.Prompt))
+			c.Set(p.Query.PromptKey, p.Query.Version, p.Query.Label, toModelPrompt(p.Prompt))
 		}
 	}
 }
 
-func (c *PromptCache) getCacheKey(promptKey, version string) string {
-	return fmt.Sprintf("%s:%s:%s", cacheKeyPrefix, promptKey, version)
+func (c *PromptCache) getCacheKey(promptKey, version, label string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", cacheKeyPrefix, promptKey, version, label)
 }
 
-func (c *PromptCache) Get(promptKey, version string) (*entity.Prompt, bool) {
-	key := c.getCacheKey(promptKey, version)
+func (c *PromptCache) Get(promptKey, version, label string) (*entity.Prompt, bool) {
+	key := c.getCacheKey(promptKey, version, label)
 	if value, err := c.cache.Get(key); err == nil {
 		if prompt, ok := value.(*entity.Prompt); ok {
 			return prompt, true
@@ -156,11 +156,11 @@ func (c *PromptCache) Get(promptKey, version string) (*entity.Prompt, bool) {
 	return nil, false
 }
 
-func (c *PromptCache) Set(promptKey, version string, prompt *entity.Prompt) {
+func (c *PromptCache) Set(promptKey, version, label string, prompt *entity.Prompt) {
 	if prompt == nil {
 		return
 	}
-	key := c.getCacheKey(promptKey, version)
+	key := c.getCacheKey(promptKey, version, label)
 	c.cache.Set(key, prompt)
 }
 
@@ -171,11 +171,12 @@ func (c *PromptCache) GetAllPromptQueries() []PromptQuery {
 
 	for _, key := range keys {
 		if strKey, ok := key.(string); ok {
-			promptKey, version, ok := parseCacheKey(strKey)
+			promptKey, version, label, ok := parseCacheKey(strKey)
 			if ok {
 				queries = append(queries, PromptQuery{
 					PromptKey: promptKey,
 					Version:   version,
+					Label:     label,
 				})
 			}
 		}
@@ -183,10 +184,10 @@ func (c *PromptCache) GetAllPromptQueries() []PromptQuery {
 	return queries
 }
 
-func parseCacheKey(key string) (promptKey string, version string, ok bool) {
+func parseCacheKey(key string) (promptKey string, version string, label string, ok bool) {
 	parts := strings.Split(key, ":")
-	if len(parts) == 3 {
-		return parts[1], parts[2], true
+	if len(parts) == 4 {
+		return parts[1], parts[2], parts[3], true
 	}
-	return "", "", false
+	return "", "", "", false
 }
