@@ -11,10 +11,11 @@ import (
 	"time"
 
 	. "github.com/bytedance/mockey"
+	. "github.com/smartystreets/goconvey/convey"
+
 	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/trace"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestNewPromptProvider(t *testing.T) {
@@ -1236,6 +1237,7 @@ func TestDoPromptFormat(t *testing.T) {
 		})
 	})
 }
+
 func TestValidateVariableValuesType_ExtendedTypes(t *testing.T) {
 	Convey("Test validateVariableValuesType for extended types", t, func() {
 		Convey("When variable type is boolean", func() {
@@ -2001,6 +2003,236 @@ Access denied.
 				So(len(messages), ShouldEqual, 1)
 				So(*messages[0].Content, ShouldEqual, "It''s a test")
 			})
+		})
+	})
+}
+
+func TestFormatMultiPart(t *testing.T) {
+	Convey("Test formatMultiPart", t, func() {
+		Convey("When parts is nil", func() {
+			result := formatMultiPart(entity.TemplateTypeNormal, nil, nil, nil)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When parts is empty", func() {
+			result := formatMultiPart(entity.TemplateTypeNormal, []*entity.ContentPart{}, nil, nil)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When parts contains nil elements", func() {
+			text := "test content"
+			parts := []*entity.ContentPart{
+				nil,
+				{
+					Type: entity.ContentTypeText,
+					Text: &text,
+				},
+				nil,
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, nil, nil)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 1)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[0].Text, ShouldEqual, "test content")
+		})
+
+		Convey("When parts contains text type with template", func() {
+			text := "Hello {{name}}"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeText,
+					Text: &text,
+				},
+			}
+			defMap := map[string]*entity.VariableDef{
+				"name": {
+					Key:  "name",
+					Type: entity.VariableTypeString,
+				},
+			}
+			valMap := map[string]any{
+				"name": "World",
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 1)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[0].Text, ShouldEqual, "Hello World")
+		})
+
+		Convey("When parts contains multi_part_variable type", func() {
+			variableKey := "multipart_var"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeMultiPartVariable,
+					Text: &variableKey,
+				},
+			}
+			multiPartContent1 := "content 1"
+			multiPartContent2 := "content 2"
+			multiPartValues := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeText,
+					Text: &multiPartContent1,
+				},
+				{
+					Type: entity.ContentTypeText,
+					Text: &multiPartContent2,
+				},
+			}
+			defMap := map[string]*entity.VariableDef{
+				"multipart_var": {
+					Key:  "multipart_var",
+					Type: entity.VariableTypeMultiPart,
+				},
+			}
+			valMap := map[string]any{
+				"multipart_var": multiPartValues,
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 2)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[0].Text, ShouldEqual, "content 1")
+			So(result[1].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[1].Text, ShouldEqual, "content 2")
+		})
+
+		Convey("When template rendering fails", func() {
+			// Mock renderTextContent to return error
+			PatchConvey("Mock renderTextContent", func() {
+				Mock(renderTextContent).Return("", errors.New("template error")).Build()
+
+				text := "Hello {{name}}"
+				parts := []*entity.ContentPart{
+					{
+						Type: entity.ContentTypeText,
+						Text: &text,
+					},
+				}
+				defMap := map[string]*entity.VariableDef{
+					"name": {
+						Key:  "name",
+						Type: entity.VariableTypeString,
+					},
+				}
+				valMap := map[string]any{
+					"name": "World",
+				}
+				result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+				So(result, ShouldBeNil)
+			})
+		})
+
+		Convey("When multi_part variable not found in defMap", func() {
+			variableKey := "unknown_var"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeMultiPartVariable,
+					Text: &variableKey,
+				},
+			}
+			defMap := map[string]*entity.VariableDef{}
+			valMap := map[string]any{}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When multi_part variable is invalid type", func() {
+			variableKey := "invalid_var"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeMultiPartVariable,
+					Text: &variableKey,
+				},
+			}
+			defMap := map[string]*entity.VariableDef{
+				"invalid_var": {
+					Key:  "invalid_var",
+					Type: entity.VariableTypeString, // Wrong type
+				},
+			}
+			valMap := map[string]any{
+				"invalid_var": "string value",
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When multi_part variable contains empty parts", func() {
+			variableKey := "multipart_var"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeMultiPartVariable,
+					Text: &variableKey,
+				},
+			}
+			emptyText := ""
+			multiPartValues := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeText,
+					Text: &emptyText, // Empty text
+				},
+				nil, // Nil element
+				{
+					Type: entity.ContentTypeText,
+					Text: nil, // Nil text
+				},
+			}
+			defMap := map[string]*entity.VariableDef{
+				"multipart_var": {
+					Key:  "multipart_var",
+					Type: entity.VariableTypeMultiPart,
+				},
+			}
+			valMap := map[string]any{
+				"multipart_var": multiPartValues,
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldBeNil) // All parts filtered out
+		})
+
+		Convey("When mixing text and multi_part types", func() {
+			textContent := "Hello {{name}}"
+			variableKey := "multipart_var"
+			parts := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeText,
+					Text: &textContent,
+				},
+				{
+					Type: entity.ContentTypeMultiPartVariable,
+					Text: &variableKey,
+				},
+			}
+			multiPartContent := "multi part content"
+			multiPartValues := []*entity.ContentPart{
+				{
+					Type: entity.ContentTypeText,
+					Text: &multiPartContent,
+				},
+			}
+			defMap := map[string]*entity.VariableDef{
+				"name": {
+					Key:  "name",
+					Type: entity.VariableTypeString,
+				},
+				"multipart_var": {
+					Key:  "multipart_var",
+					Type: entity.VariableTypeMultiPart,
+				},
+			}
+			valMap := map[string]any{
+				"name":          "World",
+				"multipart_var": multiPartValues,
+			}
+			result := formatMultiPart(entity.TemplateTypeNormal, parts, defMap, valMap)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 2)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[0].Text, ShouldEqual, "Hello World")
+			So(result[1].Type, ShouldEqual, entity.ContentTypeText)
+			So(*result[1].Text, ShouldEqual, "multi part content")
 		})
 	})
 }

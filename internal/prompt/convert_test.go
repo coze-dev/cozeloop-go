@@ -236,3 +236,172 @@ func TestToSpanMessage(t *testing.T) {
 		})
 	})
 }
+
+func TestToContentType(t *testing.T) {
+	Convey("Test toContentType", t, func() {
+		Convey("When input is ContentTypeText", func() {
+			result := toContentType(ContentTypeText)
+			So(result, ShouldEqual, entity.ContentTypeText)
+		})
+
+		Convey("When input is ContentTypeMultiPartVariable", func() {
+			result := toContentType(ContentTypeMultiPartVariable)
+			So(result, ShouldEqual, entity.ContentTypeMultiPartVariable)
+		})
+
+		Convey("When input is unknown type", func() {
+			result := toContentType("unknown")
+			So(result, ShouldEqual, entity.ContentTypeText)
+		})
+
+		Convey("When input is empty string", func() {
+			result := toContentType("")
+			So(result, ShouldEqual, entity.ContentTypeText)
+		})
+	})
+}
+
+func TestToContentPart(t *testing.T) {
+	Convey("Test toContentPart", t, func() {
+		Convey("When input is nil", func() {
+			result := toContentPart(nil)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When input has nil Type", func() {
+			text := "test text"
+			input := &ContentPart{
+				Type: nil,
+				Text: &text,
+			}
+			result := toContentPart(input)
+			So(result, ShouldNotBeNil)
+			So(result.Type, ShouldEqual, entity.ContentTypeText) // default value
+			So(result.Text, ShouldEqual, &text)
+		})
+
+		Convey("When input has nil Text", func() {
+			contentType := ContentTypeText
+			input := &ContentPart{
+				Type: &contentType,
+				Text: nil,
+			}
+			result := toContentPart(input)
+			So(result, ShouldNotBeNil)
+			So(result.Type, ShouldEqual, entity.ContentTypeText)
+			So(result.Text, ShouldBeNil)
+		})
+
+		Convey("When input is complete", func() {
+			text := "test content"
+			contentType := ContentTypeText
+			input := &ContentPart{
+				Type: &contentType,
+				Text: &text,
+			}
+			result := toContentPart(input)
+			So(result, ShouldNotBeNil)
+			So(result.Type, ShouldEqual, entity.ContentTypeText)
+			So(result.Text, ShouldEqual, &text)
+		})
+
+		Convey("When input has different ContentTypes", func() {
+			text := "multi part variable"
+			contentType := ContentTypeMultiPartVariable
+			input := &ContentPart{
+				Type: &contentType,
+				Text: &text,
+			}
+			result := toContentPart(input)
+			So(result, ShouldNotBeNil)
+			So(result.Type, ShouldEqual, entity.ContentTypeMultiPartVariable)
+			So(result.Text, ShouldEqual, &text)
+		})
+	})
+}
+
+func TestToContentParts(t *testing.T) {
+	Convey("Test toContentParts", t, func() {
+		Convey("When input is nil", func() {
+			result := toContentParts(nil)
+			So(result, ShouldBeNil)
+		})
+
+		Convey("When input is empty slice", func() {
+			result := toContentParts([]*ContentPart{})
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 0)
+		})
+
+		Convey("When input contains nil elements", func() {
+			text := "test text"
+			contentType := ContentTypeText
+			input := []*ContentPart{
+				nil,
+				{
+					Type: &contentType,
+					Text: &text,
+				},
+				nil,
+			}
+			result := toContentParts(input)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 1)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(result[0].Text, ShouldEqual, &text)
+		})
+
+		Convey("When input is valid", func() {
+			text1 := "text content"
+			text2 := "multi part content"
+			contentType1 := ContentTypeText
+			contentType2 := ContentTypeMultiPartVariable
+			input := []*ContentPart{
+				{
+					Type: &contentType1,
+					Text: &text1,
+				},
+				{
+					Type: &contentType2,
+					Text: &text2,
+				},
+			}
+			result := toContentParts(input)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 2)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(result[0].Text, ShouldEqual, &text1)
+			So(result[1].Type, ShouldEqual, entity.ContentTypeMultiPartVariable)
+			So(result[1].Text, ShouldEqual, &text2)
+		})
+
+		Convey("When input contains mixed types", func() {
+			text1 := "text content"
+			text2 := "multi part content"
+			text3 := "another text"
+			contentType1 := ContentTypeText
+			contentType2 := ContentTypeMultiPartVariable
+			contentType3 := ContentTypeText
+			input := []*ContentPart{
+				{
+					Type: &contentType1,
+					Text: &text1,
+				},
+				{
+					Type: &contentType2,
+					Text: &text2,
+				},
+				{
+					Type: &contentType3,
+					Text: &text3,
+				},
+			}
+			result := toContentParts(input)
+			So(result, ShouldNotBeNil)
+			So(len(result), ShouldEqual, 3)
+			So(result[0].Type, ShouldEqual, entity.ContentTypeText)
+			So(result[1].Type, ShouldEqual, entity.ContentTypeMultiPartVariable)
+			So(result[2].Type, ShouldEqual, entity.ContentTypeText)
+		})
+	})
+}

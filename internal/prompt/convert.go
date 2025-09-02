@@ -49,9 +49,45 @@ func toModelMessages(messages []*Message) []*entity.Message {
 		result[i] = &entity.Message{
 			Role:    toModelRole(msg.Role),
 			Content: msg.Content,
+			Parts:   toContentParts(msg.Parts),
 		}
 	}
 	return result
+}
+
+func toContentParts(dos []*ContentPart) []*entity.ContentPart {
+	if dos == nil {
+		return nil
+	}
+	parts := make([]*entity.ContentPart, 0, len(dos))
+	for _, do := range dos {
+		if do == nil {
+			continue
+		}
+		parts = append(parts, toContentPart(do))
+	}
+	return parts
+}
+
+func toContentPart(do *ContentPart) *entity.ContentPart {
+	if do == nil {
+		return nil
+	}
+	return &entity.ContentPart{
+		Type: toContentType(util.PtrValue(do.Type)),
+		Text: do.Text,
+	}
+}
+
+func toContentType(do ContentType) entity.ContentType {
+	switch do {
+	case ContentTypeText:
+		return entity.ContentTypeText
+	case ContentTypeMultiPartVariable:
+		return entity.ContentTypeMultiPartVariable
+	default:
+		return entity.ContentTypeText
+	}
 }
 
 func toModelVariableDefs(defs []*VariableDef) []*entity.VariableDef {
@@ -185,6 +221,8 @@ func toModelVariableType(vt VariableType) entity.VariableType {
 		return entity.VariableTypeArrayBoolean
 	case VariableTypeArrayObject:
 		return entity.VariableTypeArrayObject
+	case VariableTypeMultiPart:
+		return entity.VariableTypeMultiPart
 	default:
 		return entity.VariableTypeString
 	}
@@ -212,12 +250,32 @@ func toSpanPromptInput(messages []*entity.Message, arguments map[string]any) *tr
 func toSpanArguments(arguments map[string]any) []*tracespec.PromptArgument {
 	var result []*tracespec.PromptArgument
 	for key, value := range arguments {
-		result = append(result, &tracespec.PromptArgument{
-			Key:   key,
-			Value: value,
-		})
+		result = append(result, toSpanArgument(key, value))
 	}
 	return result
+}
+
+func toSpanArgument(key string, value any) *tracespec.PromptArgument {
+	var convertedVal any
+	valueType := tracespec.PromptArgumentValueTypeText
+	convertedVal = util.ToJSON(value)
+	// 尝试解析是否是多模态变量
+	if parts, ok := value.([]*entity.ContentPart); ok {
+		convertedVal = toSpanContentParts(parts)
+		valueType = tracespec.PromptArgumentValueTypeMessagePart
+	}
+	// 尝试解析是否是placeholder
+	placeholderMessages, err := convertMessageLikeObjectToMessages(value)
+	if err == nil {
+		convertedVal = toSpanMessages(placeholderMessages)
+		valueType = tracespec.PromptArgumentValueTypeModelMessage
+	}
+	return &tracespec.PromptArgument{
+		Key:       key,
+		Value:     convertedVal,
+		ValueType: valueType,
+		Source:    "input",
+	}
 }
 
 func toSpanMessages(messages []*entity.Message) []*tracespec.ModelMessage {
@@ -235,5 +293,50 @@ func toSpanMessage(message *entity.Message) *tracespec.ModelMessage {
 	return &tracespec.ModelMessage{
 		Role:    string(message.Role),
 		Content: util.PtrValue(message.Content),
+		Parts:   toSpanContentParts(message.Parts),
+	}
+}
+
+func toSpanContentParts(parts []*entity.ContentPart) []*tracespec.ModelMessagePart {
+	if parts == nil {
+		return nil
+	}
+	var result []*tracespec.ModelMessagePart
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		result = append(result, toSpanContentPart(part))
+	}
+	return result
+}
+
+func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
+	if part == nil {
+		return nil
+	}
+	var imageURL *tracespec.ModelImageURL
+	if part.ImageURL != nil {
+		imageURL = &tracespec.ModelImageURL{
+			URL: util.PtrValue(part.ImageURL),
+		}
+	}
+	return &tracespec.ModelMessagePart{
+		Type:     ToSpanPartType(part.Type),
+		Text:     util.PtrValue(part.Text),
+		ImageURL: imageURL,
+	}
+}
+
+func ToSpanPartType(partType entity.ContentType) tracespec.ModelMessagePartType {
+	switch partType {
+	case entity.ContentTypeText:
+		return tracespec.ModelMessagePartTypeText
+	case entity.ContentTypeImageURL:
+		return tracespec.ModelMessagePartTypeImage
+	case entity.ContentTypeMultiPartVariable:
+		return "multi_part_variable"
+	default:
+		return tracespec.ModelMessagePartType(partType)
 	}
 }

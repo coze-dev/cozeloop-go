@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/coze-dev/cozeloop-go/internal/util"
 )
 
 func TestPromptDeepCopy(t *testing.T) {
@@ -209,6 +211,75 @@ func TestMessageDeepCopy(t *testing.T) {
 			So(copied, ShouldNotBeNil)
 			So(copied.Role, ShouldEqual, RoleTool)
 			So(copied.Content, ShouldBeNil)
+		})
+
+		Convey("Test message with Role and Parts", func() {
+			url := "http://example.com/image.png"
+			parts := []*ContentPart{
+				{
+					Type: "text",
+					Text: util.Ptr("Hello"),
+				},
+				{
+					Type:     "image",
+					ImageURL: &url,
+				},
+			}
+			msg := &Message{
+				Role:  "user",
+				Parts: parts,
+			}
+			copied := msg.DeepCopy()
+			So(copied, ShouldNotBeNil)
+			So(copied.Role, ShouldEqual, msg.Role)
+			So(copied.Content, ShouldBeNil)
+			So(copied.Parts, ShouldNotBeNil)
+			So(len(copied.Parts), ShouldEqual, len(msg.Parts))
+			for i, part := range copied.Parts {
+				So(part.Type, ShouldEqual, msg.Parts[i].Type)
+				if part.Text != nil {
+					So(*part.Text, ShouldEqual, *msg.Parts[i].Text)
+				}
+				if part.ImageURL != nil {
+					So(part.ImageURL, ShouldEqual, msg.Parts[i].ImageURL)
+				}
+			}
+		})
+
+		Convey("Test message with Role, Content, and Parts", func() {
+			content := "Hello, World!"
+			url := "http://example.com/image.png"
+			parts := []*ContentPart{
+				{
+					Type: "text",
+					Text: util.Ptr("Hello"),
+				},
+				{
+					Type:     "image",
+					ImageURL: &url,
+				},
+			}
+			msg := &Message{
+				Role:    "user",
+				Content: &content,
+				Parts:   parts,
+			}
+			copied := msg.DeepCopy()
+			So(copied, ShouldNotBeNil)
+			So(copied.Role, ShouldEqual, msg.Role)
+			So(copied.Content, ShouldNotBeNil)
+			So(*copied.Content, ShouldEqual, *msg.Content)
+			So(copied.Parts, ShouldNotBeNil)
+			So(len(copied.Parts), ShouldEqual, len(msg.Parts))
+			for i, part := range copied.Parts {
+				So(part.Type, ShouldEqual, msg.Parts[i].Type)
+				if part.Text != nil {
+					So(*part.Text, ShouldEqual, *msg.Parts[i].Text)
+				}
+				if part.ImageURL != nil {
+					So(part.ImageURL, ShouldEqual, msg.Parts[i].ImageURL)
+				}
+			}
 		})
 	})
 }
