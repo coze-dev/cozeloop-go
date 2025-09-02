@@ -221,6 +221,11 @@ func parseCommaSeparatedMap(src string, cover bool) (baggage map[string]string) 
 			return baggage
 		}
 
+		// empty value is invalid
+		if tempKey == "" || tempValue == "" {
+			continue
+		}
+
 		_, exist := baggage[tempKey]
 		// cover old value if cover is true
 		if !exist || cover {
@@ -915,7 +920,10 @@ func (s *Span) toHeaderBaggage() (string, error) {
 	for k, v := range s.Baggage {
 		tempK := k
 		tempV := v
-		m[tempK] = tempV
+		// empty key or value is invalid
+		if tempK != "" && tempV != "" {
+			m[tempK] = tempV
+		}
 	}
 	return util.MapToStringString(m), nil
 }
