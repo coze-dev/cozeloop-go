@@ -148,6 +148,7 @@ type MPullPromptResponse struct {
 type PromptQuery struct {
 	PromptKey string `json:"prompt_key"`
 	Version   string `json:"version"`
+	Label     string `json:"label,omitempty"`
 }
 
 type PromptResultData struct {

@@ -40,7 +40,7 @@ const (
 )
 
 const (
-	GlobalTraceVersion = 1
+	GlobalTraceVersion = 0
 )
 
 const (

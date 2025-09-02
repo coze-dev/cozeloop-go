@@ -24,14 +24,14 @@ func TestPromptCache(t *testing.T) {
 				Version:     "1.0",
 			}
 
-			cache.Set("key1", "1.0", prompt)
-			retrieved, found := cache.Get("key1", "1.0")
+			cache.Set("key1", "1.0", "", prompt)
+			retrieved, found := cache.Get("key1", "1.0", "")
 			So(found, ShouldBeTrue)
 			So(retrieved, ShouldNotBeNil)
 			So(retrieved.WorkspaceID, ShouldEqual, "workspace1")
 
 			// Test retrieving a non-existent prompt
-			_, found = cache.Get("nonexistent", "1.0")
+			_, found = cache.Get("nonexistent", "1.0", "")
 			So(found, ShouldBeFalse)
 		})
 
@@ -42,14 +42,14 @@ func TestPromptCache(t *testing.T) {
 				Version:     "",
 			}
 
-			cache.Set("key2", "", prompt)
-			retrieved, found := cache.Get("key2", "")
+			cache.Set("key2", "", "", prompt)
+			retrieved, found := cache.Get("key2", "", "")
 			So(found, ShouldBeTrue)
 			So(retrieved, ShouldNotBeNil)
 			So(retrieved.WorkspaceID, ShouldEqual, "workspace1")
 
 			// Test retrieving a non-existent prompt with empty version
-			_, found = cache.Get("nonexistent", "")
+			_, found = cache.Get("nonexistent", "", "")
 			So(found, ShouldBeFalse)
 		})
 
@@ -60,7 +60,7 @@ func TestPromptCache(t *testing.T) {
 				Version:     "1.0",
 			}
 
-			cache.Set("key1", "1.0", prompt)
+			cache.Set("key1", "1.0", "", prompt)
 			queries := cache.GetAllPromptQueries()
 			So(len(queries), ShouldEqual, 1)
 			So(queries[0].PromptKey, ShouldEqual, "key1")
@@ -89,7 +89,7 @@ func TestPromptCache(t *testing.T) {
 				PromptKey:   "key1",
 				Version:     "1.0",
 			}
-			cache.Set(prompt.PromptKey, prompt.Version, prompt)
+			cache.Set(prompt.PromptKey, prompt.Version, "", prompt)
 			time.Sleep(2 * time.Second) // Allow some time for async updates
 			cache.Stop()
 		})

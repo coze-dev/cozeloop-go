@@ -37,6 +37,7 @@ type Options struct {
 type GetPromptParam struct {
 	PromptKey string
 	Version   string
+	Label     string
 }
 
 type GetPromptOptions struct {
@@ -75,6 +76,7 @@ func (p *Provider) GetPrompt(ctx context.Context, param GetPromptParam, options 
 					tracespec.Input: util.ToJSON(map[string]any{
 						tracespec.PromptKey:     param.PromptKey,
 						tracespec.PromptVersion: param.Version,
+						tracespec.PromptLabel:   param.Label,
 					}),
 				})
 				if prompt != nil {
@@ -100,7 +102,7 @@ func (p *Provider) doGetPrompt(ctx context.Context, param GetPromptParam, option
 		prompt = prompt.DeepCopy()
 	}()
 	// Get from cache
-	if cached, ok := p.cache.Get(param.PromptKey, param.Version); ok {
+	if cached, ok := p.cache.Get(param.PromptKey, param.Version, param.Label); ok {
 		return cached, nil
 	}
 
@@ -111,6 +113,7 @@ func (p *Provider) doGetPrompt(ctx context.Context, param GetPromptParam, option
 			{
 				PromptKey: param.PromptKey,
 				Version:   param.Version,
+				Label:     param.Label,
 			},
 		},
 	})
@@ -124,7 +127,7 @@ func (p *Provider) doGetPrompt(ctx context.Context, param GetPromptParam, option
 
 	// Cache the result
 	result := toModelPrompt(promptResults[0].Prompt)
-	p.cache.Set(promptResults[0].Query.PromptKey, promptResults[0].Query.Version, result)
+	p.cache.Set(promptResults[0].Query.PromptKey, promptResults[0].Query.Version, promptResults[0].Query.Label, result)
 
 	return result, nil
 }
