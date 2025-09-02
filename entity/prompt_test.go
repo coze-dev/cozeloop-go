@@ -214,16 +214,15 @@ func TestMessageDeepCopy(t *testing.T) {
 		})
 
 		Convey("Test message with Role and Parts", func() {
+			url := "http://example.com/image.png"
 			parts := []*ContentPart{
 				{
 					Type: "text",
 					Text: util.Ptr("Hello"),
 				},
 				{
-					Type: "image",
-					ImageURL: &ImageURL{
-						URL: "http://example.com/image.png",
-					},
+					Type:     "image",
+					ImageURL: &url,
 				},
 			}
 			msg := &Message{
@@ -242,23 +241,22 @@ func TestMessageDeepCopy(t *testing.T) {
 					So(*part.Text, ShouldEqual, *msg.Parts[i].Text)
 				}
 				if part.ImageURL != nil {
-					So(part.ImageURL.URL, ShouldEqual, msg.Parts[i].ImageURL.URL)
+					So(part.ImageURL, ShouldEqual, msg.Parts[i].ImageURL)
 				}
 			}
 		})
 
 		Convey("Test message with Role, Content, and Parts", func() {
 			content := "Hello, World!"
+			url := "http://example.com/image.png"
 			parts := []*ContentPart{
 				{
 					Type: "text",
 					Text: util.Ptr("Hello"),
 				},
 				{
-					Type: "image",
-					ImageURL: &ImageURL{
-						URL: "http://example.com/image.png",
-					},
+					Type:     "image",
+					ImageURL: &url,
 				},
 			}
 			msg := &Message{
@@ -279,7 +277,7 @@ func TestMessageDeepCopy(t *testing.T) {
 					So(*part.Text, ShouldEqual, *msg.Parts[i].Text)
 				}
 				if part.ImageURL != nil {
-					So(part.ImageURL.URL, ShouldEqual, msg.Parts[i].ImageURL.URL)
+					So(part.ImageURL, ShouldEqual, msg.Parts[i].ImageURL)
 				}
 			}
 		})

@@ -34,7 +34,9 @@ func main() {
 	client, err := cozeloop.NewClient(
 		// Set whether to report a trace span when get or format prompt.
 		// Default value is false.
-		cozeloop.WithPromptTrace(true))
+		cozeloop.WithPromptTrace(true),
+		cozeloop.WithWorkspaceID("7496795200791511052"),
+		cozeloop.WithAPIToken("pat_MncpzaGch5UIHuModf3mv7S6IpNkG8uer265shnDPML8MRiG0gJrYoT9izOAOhdd"))
 	if err != nil {
 		panic(err)
 	}
@@ -48,9 +50,9 @@ func main() {
 
 	// 3.Get the prompt
 	prompt, err := llmRunner.client.GetPrompt(ctx, cozeloop.GetPromptParam{
-		PromptKey: "prompt_hub_demo",
+		PromptKey: "image1",
 		// If version is not specified, the latest version of the corresponding prompt will be obtained
-		Version: "0.0.1",
+		Version: "0.0.4",
 	})
 	if err != nil {
 		fmt.Printf("get prompt failed: %v\n", err)
@@ -77,22 +79,37 @@ func main() {
 
 		// 4.Format messages of the prompt
 		imageText := "图片样例"
-		imageURL := "https://example.com" //公网访问地址
+		imageURL := "https://dummyimage.com/600x400/4CAF50/fff&text=" //公网访问地址
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
 			"num":   "2",
 			"count": 10,
+			"format": map[string]interface{}{
+				"image1": map[string]interface{}{
+					"content1": "",
+					"content2": "",
+				},
+				"image2": map[string]interface{}{
+					"content1": "",
+					"content2": "",
+				},
+			},
 			"im1": []*entity.ContentPart{
 				{
 					Type: entity.ContentTypeText,
 					Text: &imageText,
 				},
 				{
+					Type:     entity.ContentTypeImageURL,
+					ImageURL: &imageURL,
+				},
+				{
 					Type: entity.ContentTypeImageURL,
-					ImageURL: &entity.ImageURL{
-						URL: imageURL,
-					},
+				},
+				{
+					Type: entity.ContentTypeText,
 				},
 			},
+			// Other variables in the prompt template that are not provided with corresponding values will be considered as empty values
 		})
 		if err != nil {
 			fmt.Printf("prompt format failed: %v\n", err)
@@ -258,7 +275,7 @@ func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
 	var imageURL *tracespec.ModelImageURL
 	if part.ImageURL != nil {
 		imageURL = &tracespec.ModelImageURL{
-			URL: part.ImageURL.URL,
+			URL: util.PtrValue(part.ImageURL),
 		}
 	}
 	return &tracespec.ModelMessagePart{

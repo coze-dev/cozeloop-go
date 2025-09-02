@@ -318,7 +318,7 @@ func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
 	var imageURL *tracespec.ModelImageURL
 	if part.ImageURL != nil {
 		imageURL = &tracespec.ModelImageURL{
-			URL: part.ImageURL.URL,
+			URL: util.PtrValue(part.ImageURL),
 		}
 	}
 	return &tracespec.ModelMessagePart{

@@ -47,7 +47,7 @@ const (
 type ContentPart struct {
 	Type     ContentType `json:"type"`
 	Text     *string     `json:"text,omitempty"`
-	ImageURL *ImageURL   `json:"image_url,omitempty"`
+	ImageURL *string     `json:"image_url,omitempty"`
 }
 
 type ContentType string
@@ -57,10 +57,6 @@ const (
 	ContentTypeImageURL          ContentType = "image_url"
 	ContentTypeMultiPartVariable ContentType = "multi_part_variable"
 )
-
-type ImageURL struct {
-	URL string `json:"url"`
-}
 
 type ToolType string
 
@@ -185,24 +181,13 @@ func (cp *ContentPart) DeepCopy() *ContentPart {
 		return nil
 	}
 	copied := &ContentPart{
-		Type: cp.Type,
+		Type:     cp.Type,
+		ImageURL: cp.ImageURL,
 	}
 	if cp.Text != nil {
 		copied.Text = util.Ptr(*cp.Text)
 	}
-	if cp.ImageURL != nil {
-		copied.ImageURL = cp.ImageURL.DeepCopy()
-	}
 	return copied
-}
-
-func (iu *ImageURL) DeepCopy() *ImageURL {
-	if iu == nil {
-		return nil
-	}
-	return &ImageURL{
-		URL: iu.URL,
-	}
 }
 
 func (v *VariableDef) DeepCopy() *VariableDef {
