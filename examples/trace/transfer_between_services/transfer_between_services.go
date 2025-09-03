@@ -90,7 +90,7 @@ func main() {
 	// -- close trace, do flush and close client
 	// Warning! Once Close is executed, the client will become unavailable and a new client needs
 	// to be created via NewClient! Use it only when you need to release resources, such as shutting down an instance!
-	//client.Close(ctx)
+	// client.Close(ctx)
 }
 
 func (r *llmRunner) llmCall(ctx context.Context) (err error) {
@@ -98,8 +98,8 @@ func (r *llmRunner) llmCall(ctx context.Context) (err error) {
 	defer span.Finish(ctx)
 
 	// llm is processing
-	//baseURL := "https://xxx"
-	//ak := "****"
+	// baseURL := "https://xxx"
+	// ak := "****"
 	modelName := "gpt-4o-2024-05-13"
 	//maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{

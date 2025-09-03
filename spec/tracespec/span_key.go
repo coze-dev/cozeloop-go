@@ -50,4 +50,5 @@ const (
 
 	CallType = "call_type"
 	LogID    = "log_id"
+	TraceID  = "trace_id"
 )

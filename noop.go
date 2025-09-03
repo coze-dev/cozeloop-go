@@ -37,6 +37,16 @@ func (c *NoopClient) PromptFormat(ctx context.Context, prompt *entity.Prompt, va
 	return nil, c.newClientError
 }
 
+func (c *NoopClient) Execute(ctx context.Context, req *entity.ExecuteParam, options ...ExecuteOption) (entity.ExecuteResult, error) {
+	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
+	return entity.ExecuteResult{}, c.newClientError
+}
+
+func (c *NoopClient) ExecuteStreaming(ctx context.Context, req *entity.ExecuteParam, options ...ExecuteStreamingOption) (entity.StreamReader[entity.ExecuteResult], error) {
+	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
+	return nil, c.newClientError
+}
+
 func (c *NoopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	logger.CtxWarnf(context.Background(), "Noop client not supported. %v", c.newClientError)
 	return ctx, DefaultNoopSpan

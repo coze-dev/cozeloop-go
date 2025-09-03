@@ -12,9 +12,7 @@ import (
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 )
 
-var (
-	defaultBackoff = NewBackoff(defaultBaseDelay, defaultMaxDelay)
-)
+var defaultBackoff = NewBackoff(defaultBaseDelay, defaultMaxDelay)
 
 const (
 	defaultBaseDelay   = 200 * time.Millisecond

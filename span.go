@@ -20,7 +20,7 @@ type Span interface {
 	SetTags(ctx context.Context, tagKVs map[string]interface{})
 
 	// SetBaggage sets tags and also passes these tags to other downstream spans (assuming
-	//the user uses ToHeader and FromHeader to handle header passing between services).
+	// the user uses ToHeader and FromHeader to handle header passing between services).
 	SetBaggage(ctx context.Context, baggageItems map[string]string)
 
 	// Finish The span will be reported only after an explicit call to Finish.

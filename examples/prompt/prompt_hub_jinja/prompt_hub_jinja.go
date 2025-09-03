@@ -160,8 +160,8 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	defer span.Finish(ctx)
 
 	// llm is processing
-	//baseURL := "https://xxx"
-	//ak := "****"
+	// baseURL := "https://xxx"
+	// ak := "****"
 	modelName := "gpt-4o-2024-05-13"
 	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{

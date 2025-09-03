@@ -40,11 +40,9 @@ type GetPromptParam struct {
 	Label     string
 }
 
-type GetPromptOptions struct {
-}
+type GetPromptOptions struct{}
 
-type PromptFormatOptions struct {
-}
+type PromptFormatOptions struct{}
 
 func NewPromptProvider(httpClient *httpclient.Client, traceProvider *trace.Provider, options Options) *Provider {
 	openAPI := &OpenAPIClient{httpClient: httpClient}
@@ -266,7 +264,8 @@ func validateVariableValuesType(variableDefs []*entity.VariableDef, variables ma
 func formatNormalMessages(templateType entity.TemplateType,
 	messages []*entity.Message,
 	variableDefs []*entity.VariableDef,
-	variableVals map[string]any) (results []*entity.Message, err error) {
+	variableVals map[string]any,
+) (results []*entity.Message, err error) {
 	variableDefMap := make(map[string]*entity.VariableDef)
 	for _, variableDef := range variableDefs {
 		if variableDef != nil {
@@ -300,7 +299,8 @@ func formatNormalMessages(templateType entity.TemplateType,
 func formatMultiPart(templateType entity.TemplateType,
 	parts []*entity.ContentPart,
 	defMap map[string]*entity.VariableDef,
-	valMap map[string]any) []*entity.ContentPart {
+	valMap map[string]any,
+) []*entity.ContentPart {
 	var formatedParts []*entity.ContentPart
 	// render text
 	for _, part := range parts {
@@ -370,7 +370,8 @@ func formatPlaceholderMessages(messages []*entity.Message, variableVals map[stri
 func renderTextContent(templateType entity.TemplateType,
 	templateStr string,
 	variableDefMap map[string]*entity.VariableDef,
-	variableVals map[string]any) (string, error) {
+	variableVals map[string]any,
+) (string, error) {
 	switch templateType {
 	case entity.TemplateTypeNormal:
 		return fasttemplate.ExecuteFuncString(templateStr, consts.PromptNormalTemplateStartTag, consts.PromptNormalTemplateEndTag, func(w io.Writer, tag string) (int, error) {

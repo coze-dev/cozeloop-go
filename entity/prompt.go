@@ -119,6 +119,32 @@ type LLMConfig struct {
 	JSONMode         *bool    `json:"json_mode,omitempty"`
 }
 
+type ExecuteParam struct {
+	PromptKey    string         `json:"prompt_key"`
+	Version      string         `json:"version,omitempty"`
+	Label        string         `json:"label,omitempty"`
+	VariableVals map[string]any `json:"variable_vals,omitempty"`
+	Messages     []*Message     `json:"messages,omitempty"`
+}
+
+type ExecuteResult struct {
+	Message      *Message    `json:"message,omitempty"`
+	FinishReason *string     `json:"finish_reason,omitempty"`
+	Usage        *TokenUsage `json:"usage,omitempty"`
+}
+
+type TokenUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
+// VariableVal 用于传递变量值
+type VariableVal struct {
+	Key   string `json:"key"`
+	Value any    `json:"value"`
+}
+
+
 func (p *Prompt) DeepCopy() *Prompt {
 	if p == nil {
 		return nil

@@ -12,5 +12,4 @@ func TestIsValidMDNBase64(t *testing.T) {
 			t.Errorf("ParseValidMDNBase64() = %v", got)
 		}
 	})
-
 }

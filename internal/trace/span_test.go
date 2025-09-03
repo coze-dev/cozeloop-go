@@ -165,7 +165,7 @@ func Test_SpanSpecialTag(t *testing.T) {
 	now := time.Now()
 	s := &Span{
 		isFinished: 0,
-		//spanProcessor:     GetBatchSpanProcessor(httpClient, GetBatchFileProcessor(httpClient)),
+		// spanProcessor:     GetBatchSpanProcessor(httpClient, GetBatchFileProcessor(httpClient)),
 		lock:   sync.RWMutex{},
 		TagMap: make(map[string]interface{}),
 	}
@@ -282,7 +282,6 @@ func Test_SpanSpecialTag(t *testing.T) {
 
 		So(len(span.GetTagMap()), ShouldEqual, 14)
 		So(len(span.GetBaggage()), ShouldEqual, 7)
-
 	})
 }
 

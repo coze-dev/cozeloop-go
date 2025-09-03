@@ -79,8 +79,8 @@ func NewBatchSpanProcessor(
 	if ex != nil {
 		exporter = ex
 	}
-	var spanQueueLength = DefaultMaxQueueLength
-	var spanMaxExportBatchLength = DefaultMaxExportBatchLength
+	spanQueueLength := DefaultMaxQueueLength
+	spanMaxExportBatchLength := DefaultMaxExportBatchLength
 	if queueConf != nil {
 		if queueConf.SpanQueueLength > 0 {
 			spanQueueLength = queueConf.SpanQueueLength

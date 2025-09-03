@@ -46,13 +46,20 @@ func toModelMessages(messages []*Message) []*entity.Message {
 		if msg == nil {
 			continue
 		}
-		result[i] = &entity.Message{
-			Role:    toModelRole(msg.Role),
-			Content: msg.Content,
-			Parts:   toContentParts(msg.Parts),
-		}
+		result[i] = toModelMessage(msg)
 	}
 	return result
+}
+
+func toModelMessage(message *Message) *entity.Message {
+	if message == nil {
+		return nil
+	}
+	return &entity.Message{
+		Role:    toModelRole(message.Role),
+		Content: message.Content,
+		Parts:   toContentParts(message.Parts),
+	}
 }
 
 func toContentParts(dos []*ContentPart) []*entity.ContentPart {
@@ -236,6 +243,16 @@ func toModelToolChoiceType(tct ToolChoiceType) entity.ToolChoiceType {
 		return entity.ToolChoiceTypeNone
 	default:
 		return entity.ToolChoiceTypeAuto
+	}
+}
+
+func toModelTokenUsage(usage *TokenUsage) *entity.TokenUsage {
+	if usage == nil {
+		return nil
+	}
+	return &entity.TokenUsage{
+		InputTokens:  usage.InputTokens,
+		OutputTokens: usage.OutputTokens,
 	}
 }
 

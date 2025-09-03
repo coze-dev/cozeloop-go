@@ -11,21 +11,19 @@ import (
 
 // span
 
-var (
-	BaggageSpecialChars = []string{"=", ","}
-)
+var BaggageSpecialChars = []string{"=", ","}
+
+var TagValueSizeLimit = map[string]int{
+	tracespec.Input:  MaxBytesOfOneTagValueOfInputOutput,
+	tracespec.Output: MaxBytesOfOneTagValueOfInputOutput,
+}
 
 var (
-	TagValueSizeLimit = map[string]int{
-		tracespec.Input:  MaxBytesOfOneTagValueOfInputOutput,
-		tracespec.Output: MaxBytesOfOneTagValueOfInputOutput,
-	}
+	typeInt64 int64
+	typeStr   string
+	typeInt   int
+	typeInt32 int32
 )
-
-var typeInt64 int64
-var typeStr string
-var typeInt int
-var typeInt32 int32
 
 // ReserveFieldTypes Define the allowed types for each reserved field.
 var ReserveFieldTypes = map[string][]reflect.Type{

@@ -77,7 +77,7 @@ func main() {
 
 		// 4.Format messages of the prompt
 		imageText := "图片样例"
-		imageURL := "https://example.com" //公网访问地址
+		imageURL := "https://example.com" // 公网访问地址
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
 			"num":   "2",
 			"count": 10,
@@ -131,8 +131,8 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	defer span.Finish(ctx)
 
 	// llm is processing
-	//baseURL := "https://xxx"
-	//ak := "****"
+	// baseURL := "https://xxx"
+	// ak := "****"
 	modelName := "gpt-4o-2024-05-13"
 	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{
