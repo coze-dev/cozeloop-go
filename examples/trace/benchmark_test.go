@@ -46,7 +46,7 @@ func BenchmarkMyFunctionWithQPS(b *testing.B) {
 			select {
 			case <-ticker.C:
 				go func() {
-					//logger.CtxInfof(ctx, "run span demo ######################################################################################")
+					// logger.CtxInfof(ctx, "run span demo ######################################################################################")
 					runner.llmRunner(ctx, "test input")
 				}()
 			case <-done:

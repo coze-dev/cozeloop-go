@@ -636,7 +636,7 @@ func (s *Span) addDefaultTag(ctx context.Context, tagKVs map[string]interface{})
 
 // GetRectifiedMap get rectified tag map and cut off keys
 func (s *Span) GetRectifiedMap(ctx context.Context, inputMap map[string]interface{}) (map[string]interface{}, []string, int64) {
-	var validateMap = make(map[string]interface{})
+	validateMap := make(map[string]interface{})
 	var cutOffKeys []string
 	var bytesSize int64
 	for key, value := range inputMap {
@@ -777,7 +777,7 @@ func isValidBaggageItem(ctx context.Context, key, value string) bool {
 		logger.CtxInfof(ctx, "length of Baggage is too large, key:%s, value:%s", key, value)
 		return false
 	}
-	//special char check
+	// special char check
 	if hasSpecialChar(key) {
 		logger.CtxErrorf(ctx, "Baggage should not contain special characters, key:%s, value:%s", key, value)
 		return false

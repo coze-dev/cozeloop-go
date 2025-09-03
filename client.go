@@ -318,7 +318,8 @@ func GetPrompt(ctx context.Context, param GetPromptParam, options ...GetPromptOp
 
 // PromptFormat format prompt with variables
 func PromptFormat(ctx context.Context, prompt *entity.Prompt, variables map[string]any, options ...PromptFormatOption) (
-	messages []*entity.Message, err error) {
+	messages []*entity.Message, err error,
+) {
 	return getDefaultClient().PromptFormat(ctx, prompt, variables, options...)
 }
 
@@ -493,6 +494,20 @@ func (c *loopClient) PromptFormat(ctx context.Context, loopPrompt *entity.Prompt
 		opt(&config)
 	}
 	return c.promptProvider.PromptFormat(ctx, loopPrompt, variables, config)
+}
+
+func (c *loopClient) Execute(ctx context.Context, req *entity.ExecuteParam, options ...ExecuteOption) (entity.ExecuteResult, error) {
+	if c.closed {
+		return entity.ExecuteResult{}, consts.ErrClientClosed
+	}
+	return c.promptProvider.Execute(ctx, req, options...)
+}
+
+func (c *loopClient) ExecuteStreaming(ctx context.Context, req *entity.ExecuteParam, options ...ExecuteStreamingOption) (entity.StreamReader[entity.ExecuteResult], error) {
+	if c.closed {
+		return nil, consts.ErrClientClosed
+	}
+	return c.promptProvider.ExecuteStreaming(ctx, req, options...)
 }
 
 func (c *loopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {

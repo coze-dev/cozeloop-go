@@ -55,8 +55,10 @@ const (
 )
 
 const (
-	TracePromptHubSpanName      = "PromptHub"
-	TracePromptTemplateSpanName = "PromptTemplate"
+	TracePromptHubSpanName              = "PromptHub"
+	TracePromptTemplateSpanName         = "PromptTemplate"
+	TracePromptExecuteSpanName          = "PromptExecute"
+	TracePromptExecuteStreamingSpanName = "PromptExecuteStreaming"
 )
 
 const (

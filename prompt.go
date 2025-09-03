@@ -17,6 +17,10 @@ type PromptClient interface {
 	GetPrompt(ctx context.Context, param GetPromptParam, options ...GetPromptOption) (*entity.Prompt, error)
 	// PromptFormat format prompt with variables
 	PromptFormat(ctx context.Context, prompt *entity.Prompt, variables map[string]any, options ...PromptFormatOption) (messages []*entity.Message, err error)
+	// Execute execute prompt and return result
+	Execute(ctx context.Context, param *entity.ExecuteParam, options ...ExecuteOption) (entity.ExecuteResult, error)
+	// ExecuteStreaming execute prompt in streaming mode and return stream reader
+	ExecuteStreaming(ctx context.Context, param *entity.ExecuteParam, options ...ExecuteStreamingOption) (entity.StreamReader[entity.ExecuteResult], error)
 }
 
 type GetPromptParam = prompt.GetPromptParam
@@ -24,3 +28,7 @@ type GetPromptParam = prompt.GetPromptParam
 type GetPromptOption func(option *prompt.GetPromptOptions)
 
 type PromptFormatOption func(option *prompt.PromptFormatOptions)
+
+type ExecuteOption = prompt.ExecuteOption
+
+type ExecuteStreamingOption = prompt.ExecuteStreamingOption

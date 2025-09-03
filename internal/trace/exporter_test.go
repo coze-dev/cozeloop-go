@@ -14,7 +14,7 @@ import (
 
 func Test_ExportSpans(t *testing.T) {
 	ctx := context.Background()
-	spans := []*UploadSpan{&UploadSpan{}, &UploadSpan{}}
+	spans := []*UploadSpan{{}, {}}
 
 	PatchConvey("Test transferToUploadSpanAndFile failed", t, func() {
 		Mock((*httpclient.Client).Post).Return(nil).Build()

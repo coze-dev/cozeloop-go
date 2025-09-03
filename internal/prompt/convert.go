@@ -46,13 +46,23 @@ func toModelMessages(messages []*Message) []*entity.Message {
 		if msg == nil {
 			continue
 		}
-		result[i] = &entity.Message{
-			Role:    toModelRole(msg.Role),
-			Content: msg.Content,
-			Parts:   toContentParts(msg.Parts),
-		}
+		result[i] = toModelMessage(msg)
 	}
 	return result
+}
+
+func toModelMessage(message *Message) *entity.Message {
+	if message == nil {
+		return nil
+	}
+	return &entity.Message{
+		Role:             toModelRole(message.Role),
+		ReasoningContent: message.ReasoningContent,
+		Content:          message.Content,
+		Parts:            toContentParts(message.Parts),
+		ToolCallID:       message.ToolCallID,
+		ToolCalls:        toModelToolCalls(message.ToolCalls),
+	}
 }
 
 func toContentParts(dos []*ContentPart) []*entity.ContentPart {
@@ -83,10 +93,50 @@ func toContentType(do ContentType) entity.ContentType {
 	switch do {
 	case ContentTypeText:
 		return entity.ContentTypeText
+	case ContentTypeImageURL:
+		return entity.ContentTypeMultiPartVariable
+	case ContentTypeBase64Data:
+		return entity.ContentTypeBase64Data
 	case ContentTypeMultiPartVariable:
 		return entity.ContentTypeMultiPartVariable
 	default:
 		return entity.ContentTypeText
+	}
+}
+
+func toModelToolCalls(toolCalls []*ToolCall) []*entity.ToolCall {
+	if toolCalls == nil {
+		return nil
+	}
+	result := make([]*entity.ToolCall, 0, len(toolCalls))
+	for _, toolCall := range toolCalls {
+		if toolCall == nil {
+			continue
+		}
+		result = append(result, toModelToolCall(toolCall))
+	}
+	return result
+}
+
+func toModelToolCall(toolCall *ToolCall) *entity.ToolCall {
+	if toolCall == nil {
+		return nil
+	}
+	return &entity.ToolCall{
+		Index:        util.PtrValue(toolCall.Index),
+		ID:           util.PtrValue(toolCall.ID),
+		Type:         toModelToolType(toolCall.Type),
+		FunctionCall: toModelFunctionCall(toolCall.FunctionCall),
+	}
+}
+
+func toModelFunctionCall(fc *FunctionCall) *entity.FunctionCall {
+	if fc == nil {
+		return nil
+	}
+	return &entity.FunctionCall{
+		Name:      fc.Name,
+		Arguments: fc.Arguments,
 	}
 }
 
@@ -239,6 +289,16 @@ func toModelToolChoiceType(tct ToolChoiceType) entity.ToolChoiceType {
 	}
 }
 
+func toModelTokenUsage(usage *TokenUsage) *entity.TokenUsage {
+	if usage == nil {
+		return nil
+	}
+	return &entity.TokenUsage{
+		InputTokens:  usage.InputTokens,
+		OutputTokens: usage.OutputTokens,
+	}
+}
+
 // ===============to span model================
 func toSpanPromptInput(messages []*entity.Message, arguments map[string]any) *tracespec.PromptInput {
 	return &tracespec.PromptInput{
@@ -338,5 +398,147 @@ func ToSpanPartType(partType entity.ContentType) tracespec.ModelMessagePartType 
 		return "multi_part_variable"
 	default:
 		return tracespec.ModelMessagePartType(partType)
+	}
+}
+
+// Reverse conversion functions: from entity to openapi types
+func toOpenAPIMessages(messages []*entity.Message) []*Message {
+	if messages == nil {
+		return nil
+	}
+	result := make([]*Message, 0, len(messages))
+	for _, msg := range messages {
+		if msg == nil {
+			continue
+		}
+		result = append(result, toOpenAPIMessage(msg))
+	}
+	return result
+}
+
+// toOpenAPIMessage converts entity.Message to openapi Message
+func toOpenAPIMessage(message *entity.Message) *Message {
+	if message == nil {
+		return nil
+	}
+	return &Message{
+		Role:             toOpenAPIRole(message.Role),
+		ReasoningContent: message.ReasoningContent,
+		Content:          message.Content,
+		Parts:            toOpenAPIContentParts(message.Parts),
+		ToolCallID:       message.ToolCallID,
+		ToolCalls:        toOpenAPIToolCalls(message.ToolCalls),
+	}
+}
+
+// toOpenAPIRole converts entity.Role to openapi Role
+func toOpenAPIRole(r entity.Role) Role {
+	switch r {
+	case entity.RoleSystem:
+		return RoleSystem
+	case entity.RoleUser:
+		return RoleUser
+	case entity.RoleAssistant:
+		return RoleAssistant
+	case entity.RoleTool:
+		return RoleTool
+	case entity.RolePlaceholder:
+		return RolePlaceholder
+	default:
+		return RoleUser
+	}
+}
+
+// toOpenAPIContentParts converts entity.ContentPart slice to openapi ContentPart slice
+func toOpenAPIContentParts(parts []*entity.ContentPart) []*ContentPart {
+	if parts == nil {
+		return nil
+	}
+	result := make([]*ContentPart, 0, len(parts))
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		result = append(result, toOpenAPIContentPart(part))
+	}
+	return result
+}
+
+// toOpenAPIContentPart converts entity.ContentPart to openapi ContentPart
+func toOpenAPIContentPart(part *entity.ContentPart) *ContentPart {
+	if part == nil {
+		return nil
+	}
+	contentType := toOpenAPIContentType(part.Type)
+	return &ContentPart{
+		Type:       &contentType,
+		Text:       part.Text,
+		ImageURL:   part.ImageURL,
+		Base64Data: part.Base64Data,
+	}
+}
+
+// toOpenAPIContentType converts entity.ContentType to openapi ContentType
+func toOpenAPIContentType(ct entity.ContentType) ContentType {
+	switch ct {
+	case entity.ContentTypeText:
+		return ContentTypeText
+	case entity.ContentTypeImageURL:
+		return ContentTypeImageURL
+	case entity.ContentTypeBase64Data:
+		return ContentTypeBase64Data
+	case entity.ContentTypeMultiPartVariable:
+		return ContentTypeMultiPartVariable
+	default:
+		return ContentTypeText
+	}
+}
+
+// toOpenAPIToolCalls converts entity.ToolCall slice to openapi ToolCall slice
+func toOpenAPIToolCalls(toolCalls []*entity.ToolCall) []*ToolCall {
+	if toolCalls == nil {
+		return nil
+	}
+	result := make([]*ToolCall, 0, len(toolCalls))
+	for _, toolCall := range toolCalls {
+		if toolCall == nil {
+			continue
+		}
+		result = append(result, toOpenAPIToolCall(toolCall))
+	}
+	return result
+}
+
+// toOpenAPIToolCall converts entity.ToolCall to openapi ToolCall
+func toOpenAPIToolCall(toolCall *entity.ToolCall) *ToolCall {
+	if toolCall == nil {
+		return nil
+	}
+	return &ToolCall{
+		Index:        &toolCall.Index,
+		ID:           &toolCall.ID,
+		Type:         toOpenAPIToolType(toolCall.Type),
+		FunctionCall: toOpenAPIFunctionCall(toolCall.FunctionCall),
+	}
+}
+
+// toOpenAPIToolType converts entity.ToolType to openapi ToolType
+func toOpenAPIToolType(tt entity.ToolType) ToolType {
+	switch tt {
+	case entity.ToolTypeFunction:
+		return ToolTypeFunction
+	default:
+		return ToolTypeFunction
+	}
+}
+
+// toOpenAPIFunctionCall converts entity.FunctionCall to openapi FunctionCall
+func toOpenAPIFunctionCall(fc *entity.FunctionCall) *FunctionCall {
+	if fc == nil {
+		return nil
+	}
+	return &FunctionCall{
+		Name:      fc.Name,
+		Arguments: fc.Arguments,
 	}
 }

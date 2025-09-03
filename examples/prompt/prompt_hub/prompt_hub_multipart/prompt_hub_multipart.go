@@ -16,6 +16,7 @@ import (
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
+// If you want to use the multipart variable such as image in prompts, you can refer to the following.
 func main() {
 	// 1.Create a prompt on the platform
 	// You can create a Prompt on the platform's Prompt development page (set Prompt Key to 'prompt_hub_demo'), add the following messages to the template, and submit a version.
@@ -75,20 +76,19 @@ func main() {
 		}
 
 		// 4.Format messages of the prompt
-		userMessageContent := "Hello!"
-		assistantMessageContent := "Hello!"
+		imageText := "图片样例"
+		imageURL := "https://example.com" // 公网访问地址
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
-			// Normal variable type should be string
-			"var1": "artificial intelligence",
-			// Placeholder variable type should be entity.Message/*entity.Message/[]entity.Message/[]*entity.Message
-			"placeholder1": []*entity.Message{
+			"num":   "2",
+			"count": 10,
+			"im1": []*entity.ContentPart{
 				{
-					Role:    entity.RoleUser,
-					Content: &userMessageContent,
+					Type: entity.ContentTypeText,
+					Text: &imageText,
 				},
 				{
-					Role:    entity.RoleAssistant,
-					Content: &assistantMessageContent,
+					Type:     entity.ContentTypeImageURL,
+					ImageURL: &imageURL,
 				},
 			},
 			// Other variables in the prompt template that are not provided with corresponding values will be considered as empty values
@@ -131,8 +131,8 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	defer span.Finish(ctx)
 
 	// llm is processing
-	//baseURL := "https://xxx"
-	//ak := "****"
+	// baseURL := "https://xxx"
+	// ak := "****"
 	modelName := "gpt-4o-2024-05-13"
 	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{
@@ -227,10 +227,55 @@ func convertModelInput(messages []*entity.Message) *tracespec.ModelInput {
 		modelMessages = append(modelMessages, &tracespec.ModelMessage{
 			Role:    string(message.Role),
 			Content: util.PtrValue(message.Content),
+			Parts:   toSpanContentParts(message.Parts),
 		})
 	}
 
 	return &tracespec.ModelInput{
 		Messages: modelMessages,
+	}
+}
+
+func toSpanContentParts(parts []*entity.ContentPart) []*tracespec.ModelMessagePart {
+	if parts == nil {
+		return nil
+	}
+	var result []*tracespec.ModelMessagePart
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		result = append(result, toSpanContentPart(part))
+	}
+	return result
+}
+
+func toSpanContentPart(part *entity.ContentPart) *tracespec.ModelMessagePart {
+	if part == nil {
+		return nil
+	}
+	var imageURL *tracespec.ModelImageURL
+	if part.ImageURL != nil {
+		imageURL = &tracespec.ModelImageURL{
+			URL: util.PtrValue(part.ImageURL),
+		}
+	}
+	return &tracespec.ModelMessagePart{
+		Type:     ToSpanPartType(part.Type),
+		Text:     util.PtrValue(part.Text),
+		ImageURL: imageURL,
+	}
+}
+
+func ToSpanPartType(partType entity.ContentType) tracespec.ModelMessagePartType {
+	switch partType {
+	case entity.ContentTypeText:
+		return tracespec.ModelMessagePartTypeText
+	case entity.ContentTypeImageURL:
+		return tracespec.ModelMessagePartTypeImage
+	case entity.ContentTypeMultiPartVariable:
+		return "multi_part_variable"
+	default:
+		return tracespec.ModelMessagePartType(partType)
 	}
 }

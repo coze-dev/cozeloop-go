@@ -5,11 +5,13 @@ package tracespec
 
 // SpanType tag builtin values
 const (
-	VPromptHubSpanType      = "prompt_hub"
-	VPromptTemplateSpanType = "prompt"
-	VModelSpanType          = "model"
-	VRetrieverSpanType      = "retriever"
-	VToolSpanType           = "tool"
+	VPromptHubSpanType              = "prompt_hub"
+	VPromptTemplateSpanType         = "prompt"
+	VPromptExecuteSpanType          = "prompt_execute"
+	VPromptExecuteStreamingSpanType = "prompt_execute_streaming"
+	VModelSpanType                  = "model"
+	VRetrieverSpanType              = "retriever"
+	VToolSpanType                   = "tool"
 )
 
 const (
@@ -40,10 +42,12 @@ const (
 	VLibLangChain     = "langchain"
 	VLibOpentelemetry = "opentelemetry"
 
-	VSceneCustom         = "custom"          // user custom, it has the same meaning as blank.
-	VScenePromptHub      = "prompt_hub"      // get_prompt
-	VScenePromptTemplate = "prompt_template" // prompt_template
-	VSceneIntegration    = "integration"
+	VSceneCustom                 = "custom"                   // user custom, it has the same meaning as blank.
+	VScenePromptHub              = "prompt_hub"               // get_prompt
+	VScenePromptTemplate         = "prompt_template"          // prompt_template
+	VScenePromptExecute          = "prompt_execute"           // execute_prompt
+	VScenePromptExecuteStreaming = "prompt_execute_streaming" // execute_prompt_streaming
+	VSceneIntegration            = "integration"
 )
 
 // Tag values for prompt input.

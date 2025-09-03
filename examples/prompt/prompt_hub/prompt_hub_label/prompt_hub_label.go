@@ -16,14 +16,13 @@ import (
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
-// If you want to use the jinja templates in prompts, you can refer to the following.
+// Demo: How to get prompt by prompt_key and label
 func main() {
 	// 1.Create a prompt on the platform
-	// You can create a Prompt on the platform's Prompt development page (set Prompt Key to 'prompt_hub_demo'), add the following messages to the template, and submit a version.
-	// System: You are a helpful bot, the conversation topic is {{var1}}.
-	// Placeholder: placeholder1
-	// User: My question is {{var2}}
-	// Placeholder: placeholder2
+	// Create a Prompt on the platform's Prompt development page (set Prompt Key to 'prompt_hub_label_demo'),
+	// add the following messages to the template, submit a version, and set a label (e.g., 'production') for that version.
+	// System: You are a helpful assistant for {{topic}}.
+	// User: Please help me with {{user_request}}
 
 	ctx := context.Background()
 
@@ -46,17 +45,21 @@ func main() {
 	// 1. start root span
 	ctx, span := llmRunner.client.StartSpan(ctx, "root_span", "main_span", nil)
 
-	// 3.Get the prompt
+	// 3.Get prompt by prompt_key and label
+	labelValue := "production" // Can be production, beta, test or custom labels
 	prompt, err := llmRunner.client.GetPrompt(ctx, cozeloop.GetPromptParam{
-		PromptKey: "prompt_hub_demo",
-		// If version is not specified, the latest version of the corresponding prompt will be obtained
-		Version: "0.0.1",
+		PromptKey: "prompt_hub_label_demo",
+		Label:     labelValue, // Get prompt version by label
+		// Note: When Version is specified, Label field will be ignored
 	})
 	if err != nil {
 		fmt.Printf("get prompt failed: %v\n", err)
 		return
 	}
+
 	if prompt != nil {
+		fmt.Printf("successfully got prompt with label '%s'\n", labelValue)
+
 		// Get messages of the prompt
 		if prompt.PromptTemplate != nil {
 			messages, err := json.Marshal(prompt.PromptTemplate.Messages)
@@ -66,6 +69,7 @@ func main() {
 			}
 			fmt.Printf("prompt messages=%s\n", string(messages))
 		}
+
 		// Get llm config of the prompt
 		if prompt.LLMConfig != nil {
 			llmConfig, err := json.Marshal(prompt.LLMConfig)
@@ -76,56 +80,16 @@ func main() {
 		}
 
 		// 4.Format messages of the prompt
-		userMessageContent := "Hello!"
-		assistantMessageContent := "Hello!"
-
 		messages, err := llmRunner.client.PromptFormat(ctx, prompt, map[string]any{
-			"var_string": "hi",
-			"var_int":    5,
-			"var_bool":   true,
-			"var_float":  1.0,
-			"var_object": map[string]interface{}{
-				"name":    "John",
-				"age":     30,
-				"hobbies": []string{"reading", "coding"},
-				"address": map[string]interface{}{
-					"city":   "bejing",
-					"street": "123 Main",
-				},
-			},
-			"var_array_string": []string{
-				"hello", "nihao",
-			},
-			"var_array_boolean": []bool{
-				true, false, true,
-			},
-			"var_array_int": []int64{
-				1, 2, 3, 4,
-			},
-			"var_array_float": []float64{
-				1.0, 2.0,
-			},
-			"var_array_object": []interface{}{
-				map[string]interface{}{"key": "123"},
-				map[string]interface{}{"value": 100},
-			},
-			// Placeholder variable type should be entity.Message/*entity.Message/[]entity.Message/[]*entity.Message
-			"placeholder1": []*entity.Message{
-				{
-					Role:    entity.RoleUser,
-					Content: &userMessageContent,
-				},
-				{
-					Role:    entity.RoleAssistant,
-					Content: &assistantMessageContent,
-				},
-			},
-			// Other variables in the prompt template that are not provided with corresponding values will be considered as empty values
+			// Normal variable type should be string
+			"topic":        "artificial intelligence",
+			"user_request": "explain what is machine learning",
 		})
 		if err != nil {
 			fmt.Printf("prompt format failed: %v\n", err)
 			return
 		}
+
 		data, err := json.Marshal(messages)
 		if err != nil {
 			fmt.Printf("json marshal failed: %v\n", err)
@@ -136,6 +100,7 @@ func main() {
 		// 5. llm call
 		err = llmRunner.llmCall(ctx, messages)
 		if err != nil {
+			fmt.Printf("llm call failed: %v\n", err)
 			return
 		}
 	}
@@ -160,8 +125,8 @@ func (r *llmRunner) llmCall(ctx context.Context, messages []*entity.Message) (er
 	defer span.Finish(ctx)
 
 	// llm is processing
-	//baseURL := "https://xxx"
-	//ak := "****"
+	// baseURL := "https://xxx"
+	// ak := "****"
 	modelName := "gpt-4o-2024-05-13"
 	maxTokens := 1000 // range: [0, 4096]
 	//transport := &MyTransport{

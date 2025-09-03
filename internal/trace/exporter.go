@@ -187,16 +187,14 @@ func parseTag(spanTag map[string]interface{}, isSystemTag bool) (map[string]stri
 	return vStrMap, vLongMap, vDoubleMap, vBoolMap
 }
 
-var (
-	tagValueConverterMap = map[string]*tagValueConverter{
-		tracespec.Input: {
-			convertFunc: convertInput,
-		},
-		tracespec.Output: {
-			convertFunc: convertOutput,
-		},
-	}
-)
+var tagValueConverterMap = map[string]*tagValueConverter{
+	tracespec.Input: {
+		convertFunc: convertInput,
+	},
+	tracespec.Output: {
+		convertFunc: convertOutput,
+	},
+}
 
 type tagValueConverter struct {
 	convertFunc func(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error)
@@ -395,7 +393,7 @@ func transferText(src string, span *Span, tagKey string) (string, *entity.Upload
 	}
 
 	if len(src) > consts.MaxBytesOfOneTagValueOfInputOutput {
-		//key := "traceid/spanid/tagkey/filetype/large_text"
+		// key := "traceid/spanid/tagkey/filetype/large_text"
 		key := fmt.Sprintf(KeyTemplateLargeText, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeText)
 		return util.TruncateStringByChar(src, consts.TextTruncateCharLength), &entity.UploadFile{
 			TosKey:     key,
@@ -418,7 +416,7 @@ func transferImage(src *tracespec.ModelImageURL, span *Span, tagKey string) *ent
 		return nil
 	}
 
-	//key := "traceid_spanid_tagkey_filetype_randomid"
+	// key := "traceid_spanid_tagkey_filetype_randomid"
 	key := fmt.Sprintf(KeyTemplateMultiModality, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeImage, util.Gen16CharID())
 	bin, _ := base64.StdEncoding.DecodeString(src.URL)
 	src.URL = key
@@ -441,7 +439,7 @@ func transferFile(src *tracespec.ModelFileURL, span *Span, tagKey string) *entit
 		return nil
 	}
 
-	//key := "traceid/spanid/tagkey/filetype/randomid"
+	// key := "traceid/spanid/tagkey/filetype/randomid"
 	key := fmt.Sprintf(KeyTemplateMultiModality, span.GetTraceID(), span.GetSpanID(), tagKey, fileTypeFile, util.Gen16CharID())
 	bin, _ := base64.StdEncoding.DecodeString(src.URL)
 	src.URL = key
