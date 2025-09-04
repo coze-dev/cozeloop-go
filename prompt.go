@@ -32,4 +32,3 @@ type PromptFormatOption func(option *prompt.PromptFormatOptions)
 type ExecuteOption = prompt.ExecuteOption
 
 type ExecuteStreamingOption = prompt.ExecuteStreamingOption
-

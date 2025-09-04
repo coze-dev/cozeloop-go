@@ -9,9 +9,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
+
+	"github.com/coze-dev/coze-loop/backend/pkg/json"
 
 	"github.com/coze-dev/cozeloop-go"
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/internal/util"
 )
 
 func main() {
@@ -28,15 +32,16 @@ func main() {
 	defer client.Close(context.Background())
 
 	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, time.Minute)
 
 	// Execute 示例
 	fmt.Println("=== Execute Example ===")
 	executeRequest := &entity.ExecuteParam{
 		PromptKey: "prompt_hub_label_demo",
-		Version:   "0.0.1", // 可选，不设置则使用最新版本
+		Version:   "", // 可选，不设置则使用最新版本
+		Label:     "",
 		VariableVals: map[string]interface{}{
-			"user_input": "Hello, how are you?",
-			"context":    "This is a friendly conversation",
+			"query": "上海天气如何",
 		},
 	}
 
@@ -59,7 +64,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("ExecuteStreaming failed: %v", err)
 	}
-	defer streamReader.Close()
 
 	fmt.Println("Streaming response:")
 	for {
@@ -73,13 +77,22 @@ func main() {
 		}
 
 		// 处理流式响应
-		if chunk.Message != nil && chunk.Message.Content != nil {
-			fmt.Print(*chunk.Message.Content)
+		if chunk.Message != nil {
+			if reasoningContent := util.PtrValue(chunk.Message.ReasoningContent); reasoningContent != "" {
+				fmt.Printf("ReasoningContent: %s\n", reasoningContent)
+			}
+			if content := util.PtrValue(chunk.Message.Content); content != "" {
+				fmt.Printf("Content: %s\n", *chunk.Message.Content)
+			}
+			if len(chunk.Message.ToolCalls) > 0 {
+				data, _ := json.Marshal(chunk.Message.ToolCalls)
+				fmt.Printf("ToolCalls: %s\n", string(data))
+			}
 		}
 
 		// 检查是否完成
-		if chunk.FinishReason != nil {
-			fmt.Printf("\nFinish reason: %s\n", *chunk.FinishReason)
+		if finishReason := util.PtrValue(chunk.FinishReason); finishReason != "" {
+			fmt.Printf("\nFinish reason: %s\n", finishReason)
 		}
 		if chunk.Usage != nil {
 			fmt.Printf("Token Usage: %+v\n", chunk.Usage)
@@ -149,4 +162,3 @@ func main() {
 //func stringPtr(s string) *string {
 //	return &s
 //}
-

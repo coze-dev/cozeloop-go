@@ -5,6 +5,4 @@ package entity
 
 type StreamReader[T any] interface {
 	Recv() (T, error)
-	Close() error
 }
-

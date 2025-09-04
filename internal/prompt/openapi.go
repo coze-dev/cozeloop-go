@@ -46,9 +46,9 @@ const (
 
 type Message struct {
 	Role             Role           `json:"role"`
+	ReasoningContent *string        `json:"reasoning_content,omitempty"`
 	Content          *string        `json:"content,omitempty"`
 	Parts            []*ContentPart `json:"parts,omitempty"`
-	ReasoningContent *string        `json:"reasoning_content,omitempty"`
 	ToolCallID       *string        `json:"tool_call_id,omitempty"`
 	ToolCalls        []*ToolCall    `json:"tool_calls,omitempty"`
 }
@@ -163,7 +163,6 @@ type TokenUsage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 }
-
 
 type OpenAPIClient struct {
 	httpClient *httpclient.Client
@@ -310,4 +309,3 @@ func (o *OpenAPIClient) Execute(ctx context.Context, req ExecuteRequest) (*Execu
 func (o *OpenAPIClient) ExecuteStreaming(ctx context.Context, req ExecuteRequest) (*http.Response, error) {
 	return o.httpClient.PostStream(ctx, executeStreamingPromptPath, req)
 }
-

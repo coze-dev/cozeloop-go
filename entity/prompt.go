@@ -3,7 +3,9 @@
 
 package entity
 
-import "github.com/coze-dev/cozeloop-go/internal/util"
+import (
+	"github.com/coze-dev/cozeloop-go/internal/util"
+)
 
 type Prompt struct {
 	WorkspaceID    string          `json:"workspace_id"`
@@ -29,9 +31,24 @@ const (
 )
 
 type Message struct {
-	Role    Role           `json:"role"`
-	Content *string        `json:"content,omitempty"`
-	Parts   []*ContentPart `json:"parts,omitempty"`
+	Role             Role           `json:"role"`
+	ReasoningContent *string        `json:"reasoning_content,omitempty"`
+	Content          *string        `json:"content,omitempty"`
+	Parts            []*ContentPart `json:"parts,omitempty"`
+	ToolCallID       *string        `json:"tool_call_id,omitempty"`
+	ToolCalls        []*ToolCall    `json:"tool_calls,omitempty"`
+}
+
+type ToolCall struct {
+	Index        int32         `json:"index"`
+	ID           string        `json:"id"`
+	Type         ToolType      `json:"type"`
+	FunctionCall *FunctionCall `json:"function_call,omitempty"`
+}
+
+type FunctionCall struct {
+	Name      string  `json:"name"`
+	Arguments *string `json:"arguments,omitempty"`
 }
 
 type Role string
@@ -55,6 +72,7 @@ type ContentType string
 const (
 	ContentTypeText              ContentType = "text"
 	ContentTypeImageURL          ContentType = "image_url"
+	ContentTypeBase64Data        ContentType = "base64_data"
 	ContentTypeMultiPartVariable ContentType = "multi_part_variable"
 )
 
@@ -138,13 +156,6 @@ type TokenUsage struct {
 	OutputTokens int `json:"output_tokens"`
 }
 
-// VariableVal 用于传递变量值
-type VariableVal struct {
-	Key   string `json:"key"`
-	Value any    `json:"value"`
-}
-
-
 func (p *Prompt) DeepCopy() *Prompt {
 	if p == nil {
 		return nil
@@ -207,11 +218,13 @@ func (cp *ContentPart) DeepCopy() *ContentPart {
 		return nil
 	}
 	copied := &ContentPart{
-		Type:     cp.Type,
-		ImageURL: cp.ImageURL,
+		Type: cp.Type,
 	}
 	if cp.Text != nil {
 		copied.Text = util.Ptr(*cp.Text)
+	}
+	if cp.ImageURL != nil {
+		copied.ImageURL = util.Ptr(*cp.ImageURL)
 	}
 	return copied
 }

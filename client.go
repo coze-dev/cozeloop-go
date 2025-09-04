@@ -510,7 +510,6 @@ func (c *loopClient) ExecuteStreaming(ctx context.Context, req *entity.ExecutePa
 	return c.promptProvider.ExecuteStreaming(ctx, req, options...)
 }
 
-
 func (c *loopClient) StartSpan(ctx context.Context, name, spanType string, opts ...StartSpanOption) (context.Context, Span) {
 	if c.closed {
 		return ctx, DefaultNoopSpan

@@ -167,7 +167,6 @@ func (c *Client) PostStream(ctx context.Context, path string, body any) (*http.R
 	return response, nil
 }
 
-
 func (c *Client) UploadFile(ctx context.Context, path string, fileName string, reader io.Reader, form map[string]string, resp OpenAPIResponse) error {
 	var cancel context.CancelFunc
 	if c.uploadTimeout > 0 {

@@ -42,15 +42,15 @@ func NewStreamReader[T, R any](ctx context.Context, resp *http.Response, recvMid
 
 // Recv 接收下一个流式响应
 func (r *streamReader[T, R]) Recv() (T, error) {
-	response, err := r.processor.ProcessLines()
-	return r.recvMiddleware(response, err)
-}
-
-// Close 关闭流式读取器
-func (r *streamReader[T, R]) Close() error {
-	if r.response != nil && r.response.Body != nil {
-		return r.response.Body.Close()
+	select {
+	case <-r.ctx.Done():
+		r.response.Body.Close()
+		return *new(T), r.ctx.Err()
+	default:
+		response, err := r.processor.ProcessLines()
+		if err != nil {
+			r.response.Body.Close()
+		}
+		return r.recvMiddleware(response, err)
 	}
-	return nil
 }
-
