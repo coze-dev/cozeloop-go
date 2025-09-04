@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/bluele/gcache v0.0.2
 	github.com/bytedance/mockey v1.2.14
-	github.com/coze-dev/cozeloop-go/spec v0.1.0
+	github.com/coze-dev/cozeloop-go/spec v0.1.4
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/nikolalohinski/gonja/v2 v2.3.1
 	github.com/smartystreets/goconvey v1.8.1
