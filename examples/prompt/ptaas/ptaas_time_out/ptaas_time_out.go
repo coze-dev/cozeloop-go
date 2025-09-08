@@ -15,46 +15,7 @@ import (
 
 // The explanation of timeout settings is based on non-streaming execution, and it also applies to streaming execution.
 func main() {
-	// Method 1: Control the prompt execution timeout by setting the client’s timeout.
-	// In this way, the timeout of all requests will be affected.
-	setClientTimeout()
-	// Method2: Control the prompt execution timeout by setting the context timeout.
-	// In this way, the timeout will only affect the current request.
 	setCtxTimeout()
-}
-
-func setClientTimeout() {
-	// 1.Create a prompt on the platform
-	// Create a Prompt on the platform's Prompt development page (set Prompt Key to 'ptaas_demo'),
-	// add the following messages to the template, submit a version.
-	// System: You are a helpful assistant for {{topic}}.
-	// User: Please help me with {{user_request}}
-	ctx := context.Background()
-
-	// Set the following environment variables first.
-	// COZELOOP_WORKSPACE_ID=your workspace id
-	// COZELOOP_API_TOKEN=your token
-	// 2.New loop client
-	client, err := cozeloop.NewClient(
-		// Set http client time out, default is 3s, max is 10m.
-		// Executing a prompt usually takes a considerable amount of time, so adjusting the timeout period is necessary.
-		cozeloop.WithTimeout(time.Minute),
-	)
-	if err != nil {
-		panic(err)
-	}
-	defer client.Close(ctx)
-
-	// 3. Execute prompt
-	executeRequest := &entity.ExecuteParam{
-		PromptKey: "ptaas_demo",
-		Version:   "0.0.1",
-		VariableVals: map[string]any{
-			"topic":        "artificial intelligence",
-			"user_request": "explain what is machine learning",
-		},
-	}
-	nonStream(ctx, client, executeRequest)
 }
 
 func setCtxTimeout() {
@@ -75,8 +36,8 @@ func setCtxTimeout() {
 	}
 	defer client.Close(ctx)
 
-	// 3. Set context timeout, default is 3s, max is 10m.
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	// 3. Set context timeout, default is 600s, max is 600s.
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
 	// 4. Execute prompt

@@ -52,15 +52,9 @@ func (d *SSEDecoder) Decode(ctx context.Context) <-chan SSEEvent {
 
 		for {
 			event, err := d.DecodeEvent()
-			if err != nil {
-				if err != io.EOF {
-					ch <- SSEEvent{Error: err}
-				}
-				return
-			}
-
-			if event != nil {
-				ch <- SSEEvent{Event: event}
+			ch <- SSEEvent{
+				Event: event,
+				Error: err,
 			}
 		}
 	})

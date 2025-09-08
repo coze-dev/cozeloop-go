@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 
@@ -19,6 +20,8 @@ const (
 	executePromptPath          = "/v1/loop/prompts/execute"
 	executeStreamingPromptPath = "/v1/loop/prompts/execute_streaming"
 	maxPromptQueryBatchSize    = 25
+
+	defaultExecuteTimeout = 10 * time.Minute
 )
 
 type Prompt struct {
@@ -289,6 +292,8 @@ type ExecuteStreamingData struct {
 
 // Execute 执行Prompt请求
 func (o *OpenAPIClient) Execute(ctx context.Context, req ExecuteRequest) (*ExecuteData, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultExecuteTimeout)
+	defer cancel()
 	var response ExecuteResponse
 	err := o.httpClient.Post(ctx, executePromptPath, req, &response)
 	if err != nil {
@@ -299,5 +304,6 @@ func (o *OpenAPIClient) Execute(ctx context.Context, req ExecuteRequest) (*Execu
 
 // ExecuteStreaming 流式执行Prompt请求
 func (o *OpenAPIClient) ExecuteStreaming(ctx context.Context, req ExecuteRequest) (*http.Response, error) {
+	ctx, _ = context.WithTimeout(ctx, defaultExecuteTimeout)
 	return o.httpClient.PostStream(ctx, executeStreamingPromptPath, req)
 }

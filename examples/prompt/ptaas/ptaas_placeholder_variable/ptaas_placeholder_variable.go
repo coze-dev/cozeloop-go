@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/coze-dev/cozeloop-go"
 	"github.com/coze-dev/cozeloop-go/entity"
@@ -27,13 +26,7 @@ func main() {
 	// COZELOOP_WORKSPACE_ID=your workspace id
 	// COZELOOP_API_TOKEN=your token
 	// 2.New loop client
-	client, err := cozeloop.NewClient(
-		// Set http client time out, default is 3s, max is 10m.
-		// Executing a prompt usually takes a considerable amount of time, so adjusting the timeout period is necessary.
-		// If you want to adjust the timeout according to the method, you can do so using ctx; please refer to the
-		// advanced usage examples.
-		cozeloop.WithTimeout(time.Minute),
-	)
+	client, err := cozeloop.NewClient()
 	if err != nil {
 		panic(err)
 	}
