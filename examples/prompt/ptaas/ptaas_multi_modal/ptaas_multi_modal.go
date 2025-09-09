@@ -37,7 +37,7 @@ func main() {
 	defer client.Close(ctx)
 
 	// 3. Execute prompt
-	imagePath := "/Users/bytedance/Downloads/shanghai.jpeg"
+	imagePath := "your image path"
 	imageBytes, err := os.ReadFile(imagePath)
 	if err != nil {
 		panic(err)
