@@ -6,7 +6,9 @@ package prompt
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"sort"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 
@@ -14,8 +16,12 @@ import (
 )
 
 const (
-	mpullPromptPath         = "/v1/loop/prompts/mget"
-	maxPromptQueryBatchSize = 25
+	mpullPromptPath            = "/v1/loop/prompts/mget"
+	executePromptPath          = "/v1/loop/prompts/execute"
+	executeStreamingPromptPath = "/v1/loop/prompts/execute_streaming"
+	maxPromptQueryBatchSize    = 25
+
+	defaultExecuteTimeout = 10 * time.Minute
 )
 
 type Prompt struct {
@@ -42,9 +48,12 @@ const (
 )
 
 type Message struct {
-	Role    Role           `json:"role"`
-	Content *string        `json:"content,omitempty"`
-	Parts   []*ContentPart `json:"parts,omitempty"`
+	Role             Role           `json:"role"`
+	ReasoningContent *string        `json:"reasoning_content,omitempty"`
+	Content          *string        `json:"content,omitempty"`
+	Parts            []*ContentPart `json:"parts,omitempty"`
+	ToolCallID       *string        `json:"tool_call_id,omitempty"`
+	ToolCalls        []*ToolCall    `json:"tool_calls,omitempty"`
 }
 
 type Role string
@@ -58,14 +67,18 @@ const (
 )
 
 type ContentPart struct {
-	Type *ContentType `json:"type"`
-	Text *string      `json:"text,omitempty"`
+	Type       *ContentType `json:"type"`
+	Text       *string      `json:"text,omitempty"`
+	ImageURL   *string      `json:"image_url,omitempty"`
+	Base64Data *string      `json:"base64_data,omitempty"`
 }
 
 type ContentType string
 
 const (
 	ContentTypeText              ContentType = "text"
+	ContentTypeImageURL          ContentType = "image_url"
+	ContentTypeBase64Data        ContentType = "base64_data"
 	ContentTypeMultiPartVariable ContentType = "multi_part_variable"
 )
 
@@ -128,6 +141,30 @@ type LLMConfig struct {
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
 	PresencePenalty  *float64 `json:"presence_penalty,omitempty"`
 	JSONMode         *bool    `json:"json_mode,omitempty"`
+}
+
+type VariableVal struct {
+	Key                 string         `json:"key"`
+	Value               *string        `json:"value,omitempty"`
+	PlaceholderMessages []*Message     `json:"placeholder_messages,omitempty"`
+	MultiPartValues     []*ContentPart `json:"multi_part_values,omitempty"`
+}
+
+type ToolCall struct {
+	Index        *int32        `json:"index,omitempty"`
+	ID           *string       `json:"id,omitempty"`
+	Type         ToolType      `json:"type"`
+	FunctionCall *FunctionCall `json:"function_call,omitempty"`
+}
+
+type FunctionCall struct {
+	Name      string  `json:"name"`
+	Arguments *string `json:"arguments,omitempty"`
+}
+
+type TokenUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }
 
 type OpenAPIClient struct {
@@ -224,4 +261,49 @@ func (o *OpenAPIClient) doMPullPrompt(ctx context.Context, req MPullPromptReques
 		return nil, err
 	}
 	return resp.Data.Items, nil
+}
+
+type ExecuteRequest struct {
+	WorkspaceID      string         `json:"workspace_id"`
+	PromptIdentifier *PromptQuery   `json:"prompt_identifier,omitempty"`
+	VariableVals     []*VariableVal `json:"variable_vals,omitempty"`
+	Messages         []*Message     `json:"messages,omitempty"`
+}
+
+type ExecuteResponse struct {
+	httpclient.BaseResponse
+	Data *ExecuteData `json:"data"`
+}
+
+type ExecuteData struct {
+	Message      *Message    `json:"message,omitempty"`
+	FinishReason *string     `json:"finish_reason,omitempty"`
+	Usage        *TokenUsage `json:"usage,omitempty"`
+}
+
+// ExecuteStreamingData 流式执行响应数据结构体
+type ExecuteStreamingData struct {
+	Code         *int32      `json:"code,omitempty"`
+	Msg          *string     `json:"msg,omitempty"`
+	Message      *Message    `json:"message,omitempty"`
+	FinishReason *string     `json:"finish_reason,omitempty"`
+	Usage        *TokenUsage `json:"usage,omitempty"`
+}
+
+// Execute 执行Prompt请求
+func (o *OpenAPIClient) Execute(ctx context.Context, req ExecuteRequest) (*ExecuteData, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultExecuteTimeout)
+	defer cancel()
+	var response ExecuteResponse
+	err := o.httpClient.Post(ctx, executePromptPath, req, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response.Data, nil
+}
+
+// ExecuteStreaming 流式执行Prompt请求
+func (o *OpenAPIClient) ExecuteStreaming(ctx context.Context, req ExecuteRequest) (*http.Response, error) {
+	ctx, _ = context.WithTimeout(ctx, defaultExecuteTimeout)
+	return o.httpClient.PostStream(ctx, executeStreamingPromptPath, req)
 }

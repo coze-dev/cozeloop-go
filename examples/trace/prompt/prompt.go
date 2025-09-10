@@ -85,7 +85,7 @@ func main() {
 	// -- close trace, do flush and close client
 	// Warning! Once Close is executed, the client will become unavailable and a new client needs
 	// to be created via NewClient! Use it only when you need to release resources, such as shutting down an instance!
-	//client.Close(ctx)
+	// client.Close(ctx)
 }
 
 func (r *getPromptRunner) getPrompt(ctx context.Context) (prompt *entity.Prompt, err error) {

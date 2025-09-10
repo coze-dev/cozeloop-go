@@ -199,7 +199,7 @@ func (b *BatchQueueManager) Enqueue(ctx context.Context, sd interface{}, byteSiz
 		return
 	}
 	var extraParams *consts.FinishEventInfoExtra
-	var eventType = consts.SpanFinishEventFileQueueEntryRate
+	eventType := consts.SpanFinishEventFileQueueEntryRate
 	var detailMsg string
 	var isFail bool
 	select {

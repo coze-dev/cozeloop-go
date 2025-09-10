@@ -90,7 +90,7 @@ func (c *Client) PostWithRetry(ctx context.Context, path string, body any, resp 
 
 func (c *Client) Post(ctx context.Context, path string, body any, resp OpenAPIResponse) error {
 	var cancel context.CancelFunc
-	if c.timeout > 0 {
+	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, c.timeout)
 		defer cancel()
 	}
@@ -121,6 +121,45 @@ func (c *Client) Post(ctx context.Context, path string, body any, resp OpenAPIRe
 	}
 
 	return parseResponse(ctx, url, response, resp)
+}
+
+func (c *Client) PostStream(ctx context.Context, path string, body any) (*http.Response, error) {
+	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
+		ctx, _ = context.WithTimeout(ctx, c.timeout)
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("marshal body: %w", err)
+		}
+		bodyReader = bytes.NewReader(data)
+	}
+
+	url := c.baseURL + path
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	headers := map[string]string{"Content-Type": "application/json"}
+	if err := c.setHeaders(ctx, request, headers); err != nil {
+		return nil, err
+	}
+
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		logger.CtxErrorf(ctx, "http client PostStream failed, url: %v, err: %v", url, err)
+		return nil, consts.ErrRemoteService.Wrap(err)
+	}
+	if response.StatusCode != http.StatusOK {
+		logger.CtxErrorf(ctx, "http client PostStream failed, url: %v, status code: %v", url, response.StatusCode)
+		// 非200不会返回流式，而是直接返回错误信息
+		return nil, parseResponse(ctx, url, response, &BaseResponse{})
+	}
+
+	return response, nil
 }
 
 func (c *Client) UploadFile(ctx context.Context, path string, fileName string, reader io.Reader, form map[string]string, resp OpenAPIResponse) error {

@@ -31,8 +31,7 @@ func main() {
 	cozeloop.Close(ctx)
 }
 
-type CustomLogger struct {
-}
+type CustomLogger struct{}
 
 func (l *CustomLogger) CtxDebugf(ctx context.Context, format string, v ...interface{}) {
 	fmt.Printf("[Custom] [DEBUG] "+format+"\n", v...)

@@ -16,5 +16,7 @@ var (
 	ErrParsePrivateKey  = consts.ErrParsePrivateKey
 )
 
-type AuthError = consts.AuthError
-type RemoteServiceError = consts.RemoteServiceError
+type (
+	AuthError          = consts.AuthError
+	RemoteServiceError = consts.RemoteServiceError
+)

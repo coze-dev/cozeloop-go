@@ -30,11 +30,9 @@ func RmDupStrSlice(slice []string) []string {
 	return res
 }
 
-var (
-	bufferPool = sync.Pool{New: func() interface{} {
-		return new(bytes.Buffer)
-	}}
-)
+var bufferPool = sync.Pool{New: func() interface{} {
+	return new(bytes.Buffer)
+}}
 
 func GetStringBuffer() *bytes.Buffer {
 	return bufferPool.Get().(*bytes.Buffer)
