@@ -19,16 +19,18 @@ import (
 )
 
 type Client struct {
-	baseURL       string
-	httpClient    HTTPClient
-	auth          Auth
-	timeout       time.Duration
-	uploadTimeout time.Duration
+	baseURL        string
+	httpClient     HTTPClient
+	auth           Auth
+	timeout        time.Duration
+	uploadTimeout  time.Duration
+	headerEnricher func(ctx context.Context, req *http.Request)
 }
 
 type ClientOptions struct {
-	Timeout       time.Duration
-	UploadTimeout time.Duration
+	Timeout        time.Duration
+	UploadTimeout  time.Duration
+	HeaderEnricher func(ctx context.Context, req *http.Request)
 }
 
 func NewClient(baseURL string, httpClient HTTPClient, auth Auth, options *ClientOptions) *Client {
@@ -40,6 +42,7 @@ func NewClient(baseURL string, httpClient HTTPClient, auth Auth, options *Client
 	if options != nil {
 		c.timeout = options.Timeout
 		c.uploadTimeout = options.UploadTimeout
+		c.headerEnricher = options.HeaderEnricher
 	}
 	return c
 }
@@ -124,8 +127,10 @@ func (c *Client) Post(ctx context.Context, path string, body any, resp OpenAPIRe
 }
 
 func (c *Client) PostStream(ctx context.Context, path string, body any) (*http.Response, error) {
+	var cancel context.CancelFunc
 	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
-		ctx, _ = context.WithTimeout(ctx, c.timeout)
+		ctx, cancel = context.WithTimeout(ctx, c.timeout)
+		defer cancel()
 	}
 
 	var bodyReader io.Reader
@@ -222,6 +227,11 @@ func (c *Client) setHeaders(ctx context.Context, request *http.Request, headers 
 	}
 	setUserAgent(request)
 
+	// 通过回调函数设置额外headers（包括trace）
+	if c.headerEnricher != nil {
+		c.headerEnricher(ctx, request)
+	}
+
 	if env := os.Getenv("x_tt_env"); env != "" {
 		request.Header.Set("x-tt-env", env)
 	}
@@ -240,6 +250,8 @@ func setAuthorizationHeader(ctx context.Context, request *http.Request, auth Aut
 	request.Header.Set(consts.AuthorizeHeader, fmt.Sprintf("Bearer %s", token))
 	return nil
 }
+
+
 
 func parseResponse(ctx context.Context, url string, response *http.Response, resp OpenAPIResponse) error {
 	if response == nil {
