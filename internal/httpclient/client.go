@@ -127,10 +127,8 @@ func (c *Client) Post(ctx context.Context, path string, body any, resp OpenAPIRe
 }
 
 func (c *Client) PostStream(ctx context.Context, path string, body any) (*http.Response, error) {
-	var cancel context.CancelFunc
 	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
-		ctx, cancel = context.WithTimeout(ctx, c.timeout)
-		defer cancel()
+		ctx, _ = context.WithTimeout(ctx, c.timeout)
 	}
 
 	var bodyReader io.Reader
@@ -227,7 +225,6 @@ func (c *Client) setHeaders(ctx context.Context, request *http.Request, headers 
 	}
 	setUserAgent(request)
 
-	// 通过回调函数设置额外headers（包括trace）
 	if c.headerEnricher != nil {
 		c.headerEnricher(ctx, request)
 	}
@@ -250,8 +247,6 @@ func setAuthorizationHeader(ctx context.Context, request *http.Request, auth Aut
 	request.Header.Set(consts.AuthorizeHeader, fmt.Sprintf("Bearer %s", token))
 	return nil
 }
-
-
 
 func parseResponse(ctx context.Context, url string, response *http.Response, resp OpenAPIResponse) error {
 	if response == nil {
