@@ -19,16 +19,18 @@ import (
 )
 
 type Client struct {
-	baseURL       string
-	httpClient    HTTPClient
-	auth          Auth
-	timeout       time.Duration
-	uploadTimeout time.Duration
+	baseURL        string
+	httpClient     HTTPClient
+	auth           Auth
+	timeout        time.Duration
+	uploadTimeout  time.Duration
+	headerEnricher func(ctx context.Context, req *http.Request)
 }
 
 type ClientOptions struct {
-	Timeout       time.Duration
-	UploadTimeout time.Duration
+	Timeout        time.Duration
+	UploadTimeout  time.Duration
+	HeaderEnricher func(ctx context.Context, req *http.Request)
 }
 
 func NewClient(baseURL string, httpClient HTTPClient, auth Auth, options *ClientOptions) *Client {
@@ -40,6 +42,7 @@ func NewClient(baseURL string, httpClient HTTPClient, auth Auth, options *Client
 	if options != nil {
 		c.timeout = options.Timeout
 		c.uploadTimeout = options.UploadTimeout
+		c.headerEnricher = options.HeaderEnricher
 	}
 	return c
 }
@@ -221,6 +224,10 @@ func (c *Client) setHeaders(ctx context.Context, request *http.Request, headers 
 		return err
 	}
 	setUserAgent(request)
+
+	if c.headerEnricher != nil {
+		c.headerEnricher(ctx, request)
+	}
 
 	if env := os.Getenv("x_tt_env"); env != "" {
 		request.Header.Set("x-tt-env", env)

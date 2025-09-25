@@ -139,8 +139,9 @@ func NewClient(opts ...Option) (Client, error) {
 	}
 	httpClient := httpclient.NewClient(options.apiBaseURL, options.httpClient, auth,
 		&httpclient.ClientOptions{
-			Timeout:       options.timeout,
-			UploadTimeout: options.uploadTimeout,
+			Timeout:        options.timeout,
+			UploadTimeout:  options.uploadTimeout,
+			HeaderEnricher: createTraceHeaderEnricher(),
 		})
 	traceFinishEventProcessor := trace.DefaultFinishEventProcessor
 	if options.traceFinishEventProcessor != nil {
@@ -403,6 +404,23 @@ func buildAuth(opts options) (httpclient.Auth, error) {
 		return httpclient.NewTokenAuth(opts.apiToken), nil
 	}
 	return nil, ErrAuthInfoRequired
+}
+
+func createTraceHeaderEnricher() func(ctx context.Context, req *http.Request) {
+	return func(ctx context.Context, req *http.Request) {
+		span := GetSpanFromContext(ctx)
+		if span == DefaultNoopSpan {
+			return
+		}
+		tempMap, err := span.ToHeader()
+		if err != nil {
+			logger.CtxErrorf(ctx, "setTraceContextHeader span ToHeader failed, %v", err)
+			return
+		}
+		for k, v := range tempMap {
+			req.Header.Set(k, v)
+		}
+	}
 }
 
 func SetDefaultClient(client Client) {
