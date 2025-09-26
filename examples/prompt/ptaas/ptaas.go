@@ -31,9 +31,12 @@ func main() {
 	}
 	defer client.Close(ctx)
 
+	ctx, span := client.StartSpan(ctx, "root_span", "custom")
+	defer span.Finish(ctx)
+
 	// 3. Execute prompt
 	executeRequest := &entity.ExecuteParam{
-		PromptKey: "ptaas_demo",
+		PromptKey: "CozeLoop_Oncall_Master",
 		Version:   "0.0.1",
 		VariableVals: map[string]any{
 			"topic":        "artificial intelligence",
@@ -51,6 +54,7 @@ func main() {
 	nonStream(ctx, client, executeRequest)
 	// 3.2 stream
 	stream(ctx, client, executeRequest)
+	client.Flush(ctx)
 }
 
 func nonStream(ctx context.Context, client cozeloop.Client, executeRequest *entity.ExecuteParam) {

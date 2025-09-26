@@ -41,6 +41,7 @@ const (
 	ModelProvider       = "model_provider"
 	ModelName           = "model_name"
 	InputTokens         = "input_tokens"
+	InputCachedTokens   = "input_cached_tokens"
 	OutputTokens        = "output_tokens"
 	Tokens              = "tokens"
 	ModelPlatform       = "model_platform"
