@@ -821,6 +821,8 @@ func (s *Span) isDoFinish() bool {
 }
 
 func (s *Span) setSystemTag(ctx context.Context) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.SystemTagMap == nil {
 		s.SystemTagMap = make(map[string]interface{})
 	}
@@ -839,9 +841,7 @@ func (s *Span) setSystemTag(ctx context.Context) {
 	}
 	runtime.LoopSDKVersion = internal.Version()
 
-	s.lock.Lock()
 	s.SystemTagMap[tracespec.Runtime_] = util.ToJSON(runtime)
-	s.lock.Unlock()
 }
 
 // SetStatInfo sets statistical data.
@@ -874,6 +874,8 @@ func (s *Span) GetStartTime() time.Time {
 	if s == nil {
 		return time.Time{}
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	return s.StartTime
 }
@@ -882,6 +884,8 @@ func (s *Span) GetLogID() string {
 	if s == nil {
 		return ""
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	return s.LogID
 }
@@ -890,6 +894,8 @@ func (s *Span) GetServiceName() string {
 	if s == nil {
 		return ""
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	return s.ServiceName
 }
@@ -936,13 +942,13 @@ func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
 	if s == nil {
 		return
 	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	if s.SystemTagMap == nil {
 		s.SystemTagMap = make(map[string]interface{})
 	}
 	runtime.Scene = tracespec.VSceneCustom
-	s.lock.Lock()
 	s.SystemTagMap[tracespec.Runtime_] = runtime
-	s.lock.Unlock()
 }
 
 func (s *Span) SetServiceName(ctx context.Context, serviceName string) {
@@ -973,6 +979,8 @@ func (s *Span) GetFinishTime() time.Time {
 	if s == nil {
 		return time.Time{}
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 
 	return s.FinishTime
 }
