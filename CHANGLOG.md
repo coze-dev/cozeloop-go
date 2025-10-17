@@ -1,3 +1,7 @@
+## [0.1.14] - 2025-10-17
+### Added
+- fix span lock
+
 ## [0.1.13] - 2025-09-24
 ### Added
 - support custom trace connect ptaas trace
