@@ -72,3 +72,12 @@ func WithSpanWorkspaceID(workspaceID string) StartSpanOption {
 		ops.WorkspaceID = workspaceID
 	}
 }
+
+// WithSpanID Set the spanID of the span.
+// Only use when specifying a SpanID! By default, SDK can automatically generate a SpanID
+// SpanID must be a combination of 16 digits and letters.
+func WithSpanID(spanID string) StartSpanOption {
+	return func(ops *startSpanOptions) {
+		ops.SpanID = spanID
+	}
+}

@@ -35,6 +35,7 @@ type Options struct {
 type StartSpanOptions struct {
 	StartTime     time.Time
 	ParentSpanID  string
+	SpanID        string
 	TraceID       string
 	Baggage       map[string]string
 	StartNewTrace bool
@@ -133,6 +134,11 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 		parentID = options.ParentSpanID
 	}
 
+	spanID := options.SpanID
+	if len(spanID) == 0 {
+		spanID = util.Gen16CharID()
+	}
+
 	traceID := ""
 	if options.TraceID != "" {
 		traceID = options.TraceID
@@ -160,7 +166,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 	// 2. create span and init
 	s := &Span{
 		SpanContext: SpanContext{
-			SpanID:  util.Gen16CharID(),
+			SpanID:  spanID,
 			TraceID: traceID,
 			Baggage: make(map[string]string),
 		},

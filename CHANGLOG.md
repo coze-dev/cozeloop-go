@@ -1,5 +1,9 @@
-## [0.1.14] - 2025-10-17
+## [0.1.15] - 2025-10-23
 ### Added
+- support set spanID when StartSpan
+
+## [0.1.14] - 2025-10-17
+### Modified
 - fix span lock
 
 ## [0.1.13] - 2025-09-24
