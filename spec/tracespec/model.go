@@ -7,13 +7,15 @@ import "encoding/json"
 
 // ModelInput is the input for model span, for tag key: input
 type ModelInput struct {
-	Messages        []*ModelMessage  `json:"messages,omitempty"`
-	Tools           []*ModelTool     `json:"tools,omitempty"`
-	ModelToolChoice *ModelToolChoice `json:"tool_choice,omitempty"`
+	Messages           []*ModelMessage  `json:"messages,omitempty"`
+	Tools              []*ModelTool     `json:"tools,omitempty"`
+	ModelToolChoice    *ModelToolChoice `json:"tool_choice,omitempty"`
+	PreviousResponseID string           `json:"previous_response_id,omitempty"`
 }
 
 // ModelOutput is the output for model span, for tag key: output
 type ModelOutput struct {
+	ID      string         `json:"id,omitempty"`
 	Choices []*ModelChoice `json:"choices"`
 }
 
