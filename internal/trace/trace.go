@@ -190,7 +190,7 @@ func (t *Provider) startSpan(ctx context.Context, spanName string, spanType stri
 	}
 
 	// 3. set Baggage from parent span
-	s.setBaggage(ctx, options.Baggage, false)
+	s.setBaggage(ctx, options.Baggage)
 
 	return s
 }
