@@ -1,3 +1,7 @@
+## [0.1.16] - 2025-11-10
+### Fixed
+- fix baggage escape problem
+
 ## [0.1.15] - 2025-10-23
 ### Added
 - support set spanID when StartSpan

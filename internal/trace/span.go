@@ -742,10 +742,10 @@ func (s *Span) SetBaggage(ctx context.Context, baggageItems map[string]string) {
 		return
 	}
 
-	s.setBaggage(ctx, baggageItems, true)
+	s.setBaggage(ctx, baggageItems)
 }
 
-func (s *Span) setBaggage(ctx context.Context, baggageItems map[string]string, escape bool) {
+func (s *Span) setBaggage(ctx context.Context, baggageItems map[string]string) {
 	if s == nil {
 		return
 	}
@@ -760,10 +760,6 @@ func (s *Span) setBaggage(ctx context.Context, baggageItems map[string]string, e
 			s.SetTags(ctx, map[string]interface{}{key: value})
 			newKey := key
 			newValue := value
-			if escape {
-				newKey = url.QueryEscape(key)
-				newValue = url.QueryEscape(value)
-			}
 			s.SetBaggageItem(newKey, newValue)
 		}
 	}
@@ -928,7 +924,7 @@ func (s *Span) toHeaderBaggage() (string, error) {
 		tempV := v
 		// empty key or value is invalid
 		if tempK != "" && tempV != "" {
-			m[tempK] = tempV
+			m[url.QueryEscape(tempK)] = url.QueryEscape(tempV)
 		}
 	}
 	return util.MapToStringString(m), nil
