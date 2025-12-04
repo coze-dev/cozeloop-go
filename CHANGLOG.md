@@ -1,3 +1,7 @@
+## [0.1.17] - 2025-12-04
+### Fixed
+- fix baggage and tag concurrent problem
+
 ## [0.1.16] - 2025-11-10
 ### Fixed
 - fix baggage escape problem
