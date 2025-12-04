@@ -83,6 +83,20 @@ type TagTruncateConf struct {
 	InputOutputFieldMaxByte int
 }
 
+func (s *Span) GetBaggage() map[string]string {
+	var bg map[string]string
+	s.lock.RLock()
+	rawBag := s.SpanContext.GetBaggage()
+	if rawBag != nil {
+		bg = make(map[string]string)
+		for k, v := range rawBag {
+			bg[k] = v
+		}
+	}
+	s.lock.RUnlock()
+	return bg
+}
+
 func (s *Span) setCutOffTag(cutOffKeys []string) {
 	if cutOffTags, ok := s.SystemTagMap[consts.CutOff]; ok {
 		if value, ok := cutOffTags.([]string); ok {
@@ -117,7 +131,16 @@ func (s *Span) GetTagMap() map[string]interface{} {
 		return nil
 	}
 
-	return s.TagMap
+	var tagMap map[string]interface{}
+	s.lock.RLock()
+	if s.TagMap != nil {
+		tagMap = make(map[string]interface{})
+		for k, v := range s.TagMap {
+			tagMap[k] = v
+		}
+	}
+	s.lock.RUnlock()
+	return tagMap
 }
 
 func (s *Span) GetDuration() int64 {
