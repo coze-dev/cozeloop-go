@@ -11,6 +11,11 @@ const (
 	ReasoningDuration = "reasoning_duration" // The duration during the reasoning process. The unit is microseconds.
 )
 
+// Tags for tool-type span.
+const (
+	ToolCallID = "tool_call_id"
+)
+
 // Tags for retriever-type span
 const (
 	RetrieverProvider = "retriever_provider" // Data retrieval providers, such as Elasticsearch (ES), VikingDB, etc.
