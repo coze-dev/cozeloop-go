@@ -48,6 +48,8 @@ type ModelMessagePart struct {
 	Text     string               `json:"text,omitempty"`
 	ImageURL *ModelImageURL       `json:"image_url,omitempty"`
 	FileURL  *ModelFileURL        `json:"file_url,omitempty"`
+	AudioURL *ModelAudioURL       `json:"audio_url,omitempty"`
+	VideoURL *ModelVideoURL       `json:"video_url,omitempty"`
 }
 
 type ModelMessagePartType string
@@ -56,6 +58,8 @@ var (
 	ModelMessagePartTypeText  ModelMessagePartType = "text"
 	ModelMessagePartTypeImage ModelMessagePartType = "image_url"
 	ModelMessagePartTypeFile  ModelMessagePartType = "file_url"
+	ModelMessagePartTypeAudio ModelMessagePartType = "audio_url"
+	ModelMessagePartTypeVideo ModelMessagePartType = "video_url"
 )
 
 type ModelImageURL struct {
@@ -75,6 +79,17 @@ type ModelFileURL struct {
 	Suffix string `json:"suffix,omitempty"`
 }
 
+type ModelAudioURL struct {
+	Name string `json:"name,omitempty"`
+	// Required. You can enter a valid audio URL of audio.
+	URL string `json:"url,omitempty"`
+}
+
+type ModelVideoURL struct {
+	Name string `json:"name,omitempty"`
+	// Required. You can enter a valid video URL of video.
+	URL string `json:"url,omitempty"`
+}
 type ModelToolCall struct {
 	ID       string                 `json:"id,omitempty"`
 	Type     string                 `json:"type,omitempty"` // Always be: "function"
