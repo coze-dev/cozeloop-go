@@ -81,18 +81,14 @@ type ModelFileURL struct {
 
 type ModelAudioURL struct {
 	Name string `json:"name,omitempty"`
-	// Required. You can enter a valid audio URL or MDN Base64 data of audio.
-	// MDN: https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data#syntax
-	URL    string `json:"url,omitempty"`
-	Detail string `json:"detail,omitempty"`
+	// Required. You can enter a valid audio URL of audio.
+	URL string `json:"url,omitempty"`
 }
 
 type ModelVideoURL struct {
 	Name string `json:"name,omitempty"`
-	// Required. You can enter a valid video URL or MDN Base64 data of video.
-	// MDN: https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data#syntax
-	URL    string `json:"url,omitempty"`
-	Detail string `json:"detail,omitempty"`
+	// Required. You can enter a valid video URL of video.
+	URL string `json:"url,omitempty"`
 }
 type ModelToolCall struct {
 	ID       string                 `json:"id,omitempty"`
