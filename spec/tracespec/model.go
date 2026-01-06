@@ -40,16 +40,18 @@ type ModelMessage struct {
 	Name             string              `json:"name,omitempty"`
 	ToolCalls        []*ModelToolCall    `json:"tool_calls,omitempty"`
 	ToolCallID       string              `json:"tool_call_id,omitempty"`
+	Signature        string              `json:"signature,omitempty"`
 	Metadata         map[string]string   `json:"metadata,omitempty"`
 }
 
 type ModelMessagePart struct {
-	Type     ModelMessagePartType `json:"type"` // Required. The type of the content.
-	Text     string               `json:"text,omitempty"`
-	ImageURL *ModelImageURL       `json:"image_url,omitempty"`
-	FileURL  *ModelFileURL        `json:"file_url,omitempty"`
-	AudioURL *ModelAudioURL       `json:"audio_url,omitempty"`
-	VideoURL *ModelVideoURL       `json:"video_url,omitempty"`
+	Type      ModelMessagePartType `json:"type"` // Required. The type of the content.
+	Text      string               `json:"text,omitempty"`
+	ImageURL  *ModelImageURL       `json:"image_url,omitempty"`
+	FileURL   *ModelFileURL        `json:"file_url,omitempty"`
+	AudioURL  *ModelAudioURL       `json:"audio_url,omitempty"`
+	VideoURL  *ModelVideoURL       `json:"video_url,omitempty"`
+	Signature string               `json:"signature,omitempty"`
 }
 
 type ModelMessagePartType string
@@ -91,9 +93,10 @@ type ModelVideoURL struct {
 	URL string `json:"url,omitempty"`
 }
 type ModelToolCall struct {
-	ID       string                 `json:"id,omitempty"`
-	Type     string                 `json:"type,omitempty"` // Always be: "function"
-	Function *ModelToolCallFunction `json:"function"`
+	ID        string                 `json:"id,omitempty"`
+	Type      string                 `json:"type,omitempty"` // Always be: "function"
+	Function  *ModelToolCallFunction `json:"function"`
+	Signature string                 `json:"signature,omitempty"`
 }
 
 type ModelToolCallFunction struct {
