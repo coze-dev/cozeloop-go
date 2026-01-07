@@ -103,7 +103,7 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 
 		resFile = append(resFile, spanUploadFile...)
 
-		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.TagMap, false)
+		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.GetTagMap(), false)
 		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
 		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),

@@ -176,6 +176,8 @@ func (s *Span) GetStatusCode() int32 {
 	if s == nil {
 		return 0
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.StatusCode
 }
 
@@ -284,7 +286,7 @@ func fromHeaderParent(h string) (traceID, spanID string, err error) {
 }
 
 func (s *Span) SetInput(ctx context.Context, input interface{}) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 
@@ -414,7 +416,7 @@ func parseModelMessageParts(mContents []*tracespec.ModelMessagePart) (isMultiMod
 }
 
 func (s *Span) SetOutput(ctx context.Context, output interface{}) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	mContent := tracespec.ModelOutput{}
@@ -515,14 +517,14 @@ func getModelOutputBytesSize(mContent tracespec.ModelOutput) int64 {
 }
 
 func (s *Span) SetError(ctx context.Context, err error) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.Error, err.Error()))
 }
 
 func (s *Span) SetStatusCode(ctx context.Context, code int) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.lock.Lock()
@@ -531,49 +533,49 @@ func (s *Span) SetStatusCode(ctx context.Context, code int) {
 }
 
 func (s *Span) SetUserID(ctx context.Context, userID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(consts.UserID, userID))
 }
 
 func (s *Span) SetUserIDBaggage(ctx context.Context, userID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetBaggage(ctx, oneBaggage(consts.UserID, userID))
 }
 
 func (s *Span) SetMessageID(ctx context.Context, messageID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(consts.MessageID, messageID))
 }
 
 func (s *Span) SetMessageIDBaggage(ctx context.Context, messageID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetBaggage(ctx, oneBaggage(consts.MessageID, messageID))
 }
 
 func (s *Span) SetThreadID(ctx context.Context, threadID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(consts.ThreadID, threadID))
 }
 
 func (s *Span) SetThreadIDBaggage(ctx context.Context, threadID string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetBaggage(ctx, oneBaggage(consts.ThreadID, threadID))
 }
 
 func (s *Span) SetPrompt(ctx context.Context, prompt entity.Prompt) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	if len(prompt.PromptKey) > 0 {
@@ -585,49 +587,49 @@ func (s *Span) SetPrompt(ctx context.Context, prompt entity.Prompt) {
 }
 
 func (s *Span) SetModelProvider(ctx context.Context, modelProvider string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.ModelProvider, modelProvider))
 }
 
 func (s *Span) SetModelName(ctx context.Context, modelName string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.ModelName, modelName))
 }
 
 func (s *Span) SetModelCallOptions(ctx context.Context, callOptions interface{}) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.CallOptions, callOptions))
 }
 
 func (s *Span) SetInputTokens(ctx context.Context, inputTokens int) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.InputTokens, inputTokens))
 }
 
 func (s *Span) SetOutputTokens(ctx context.Context, outputTokens int) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(tracespec.OutputTokens, outputTokens))
 }
 
 func (s *Span) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int64) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(consts.StartTimeFirstResp, startTimeFirstResp))
 }
 
 func (s *Span) SetTags(ctx context.Context, tagKVs map[string]interface{}) {
-	if s == nil || len(tagKVs) == 0 {
+	if s == nil || len(tagKVs) == 0 || s.isSpanFinished() {
 		return
 	}
 
@@ -758,7 +760,7 @@ func (s *Span) SetMultiModalityMap(key string) {
 }
 
 func (s *Span) SetBaggage(ctx context.Context, baggageItems map[string]string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	if len(baggageItems) == 0 {
@@ -837,6 +839,10 @@ func (s *Span) Finish(ctx context.Context) {
 
 func (s *Span) isDoFinish() bool {
 	return atomic.CompareAndSwapInt32(&s.isFinished, spanUnFinished, spanFinished)
+}
+
+func (s *Span) isSpanFinished() bool {
+	return atomic.LoadInt32(&s.isFinished) == spanFinished
 }
 
 func (s *Span) setSystemTag(ctx context.Context) {
@@ -958,7 +964,7 @@ func (s *Span) toHeaderParent() string {
 }
 
 func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.lock.Lock()
@@ -971,12 +977,18 @@ func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
 }
 
 func (s *Span) SetServiceName(ctx context.Context, serviceName string) {
+	if s == nil || s.isSpanFinished() {
+		return
+	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.ServiceName = serviceName
 }
 
 func (s *Span) SetLogID(ctx context.Context, logID string) {
+	if s == nil || s.isSpanFinished() {
+		return
+	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.LogID = logID
@@ -989,6 +1001,9 @@ func (s *Span) IsRootSpan() bool {
 // SetFinishTime
 // Default is time.Now() when span Finish(). DO NOT set unless you do not use default time.
 func (s *Span) SetFinishTime(finishTime time.Time) {
+	if s == nil || s.isSpanFinished() {
+		return
+	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.FinishTime = finishTime
@@ -1005,7 +1020,7 @@ func (s *Span) GetFinishTime() time.Time {
 }
 
 func (s *Span) SetSystemTags(ctx context.Context, systemTags map[string]interface{}) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.lock.Lock()
@@ -1016,7 +1031,7 @@ func (s *Span) SetSystemTags(ctx context.Context, systemTags map[string]interfac
 }
 
 func (s *Span) SetDeploymentEnv(ctx context.Context, deploymentEnv string) {
-	if s == nil {
+	if s == nil || s.isSpanFinished() {
 		return
 	}
 	s.SetTags(ctx, oneTag(consts.DeploymentEnv, deploymentEnv))
