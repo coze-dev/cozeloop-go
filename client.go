@@ -174,6 +174,11 @@ func NewClient(opts ...Option) (Client, error) {
 	})
 
 	clientCache.Store(cacheKey, c)
+	defaultClientLock.Lock()
+	if defaultClient == nil {
+		SetDefaultClient(c)
+	}
+	defaultClientLock.Unlock()
 	return c, nil
 }
 
