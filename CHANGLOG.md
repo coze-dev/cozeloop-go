@@ -1,3 +1,7 @@
+## [0.1.18] - 2026-01-07
+### Fixed
+- fix tag concurrent problem, forbid set function after finish span
+
 ## [0.1.17] - 2025-12-04
 ### Fixed
 - fix baggage and tag concurrent problem
