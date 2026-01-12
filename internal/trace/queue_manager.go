@@ -66,8 +66,8 @@ func newBatchQueueManager(o batchQueueManagerOptions) *BatchQueueManager {
 		stopped:    0,
 	}
 
+	bsp.stopWait.Add(1)
 	util.GoSafe(context.Background(), func() {
-		bsp.stopWait.Add(1)
 		defer bsp.stopWait.Done()
 		bsp.processQueue()
 		bsp.drainQueue(context.Background())

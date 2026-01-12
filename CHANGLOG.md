@@ -1,3 +1,7 @@
+## [0.1.19] - 2026-01-12
+### Fixed
+- fix trace inner queue problem
+
 ## [0.1.18] - 2026-01-07
 ### Fixed
 - fix tag concurrent problem, forbid set function after finish span
