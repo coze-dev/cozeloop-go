@@ -633,6 +633,15 @@ func (s *Span) SetTags(ctx context.Context, tagKVs map[string]interface{}) {
 		return
 	}
 
+	s.setTagsIgnoreFinish(ctx, tagKVs)
+}
+
+// after finish, inner use
+func (s *Span) setTagsIgnoreFinish(ctx context.Context, tagKVs map[string]interface{}) {
+	if s == nil || len(tagKVs) == 0 {
+		return
+	}
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -874,14 +883,14 @@ func (s *Span) setStatInfo(ctx context.Context) {
 	tagMap := s.GetTagMap()
 	if tempV, ok := tagMap[consts.StartTimeFirstResp]; ok {
 		// latency_first_resp = start_time_first_resp - start_time
-		s.SetTags(ctx, map[string]interface{}{consts.LatencyFirstResp: util.GetValueOfInt(tempV) - s.GetStartTime().UnixMicro()})
+		s.setTagsIgnoreFinish(ctx, map[string]interface{}{consts.LatencyFirstResp: util.GetValueOfInt(tempV) - s.GetStartTime().UnixMicro()})
 	}
 
 	inputTokens, inputTokensExist := tagMap[tracespec.InputTokens]
 	outputTokens, outputTokensExist := tagMap[tracespec.OutputTokens]
 	if inputTokensExist || outputTokensExist {
 		// tokens = input_tokens+output_tokens
-		s.SetTags(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
+		s.setTagsIgnoreFinish(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
 	}
 
 	// Duration = finish_time - start_time, unit: microseconds
