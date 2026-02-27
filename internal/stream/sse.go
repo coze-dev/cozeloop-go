@@ -52,9 +52,13 @@ func (d *SSEDecoder) Decode(ctx context.Context) <-chan SSEEvent {
 
 		for {
 			event, err := d.DecodeEvent()
-			ch <- SSEEvent{
-				Event: event,
-				Error: err,
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- SSEEvent{Event: event, Error: err}:
+			}
+			if err != nil {
+				return
 			}
 		}
 	})
