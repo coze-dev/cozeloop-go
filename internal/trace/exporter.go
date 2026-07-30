@@ -90,7 +90,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 	resFile := make([]*entity.UploadFile, 0, len(spans))
 
 	for _, span := range spans {
-		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span)
+		tagMap := span.GetTagMap()
+		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span, tagMap)
 		if err != nil {
 			logger.CtxErrorf(ctx, "parseInputOutput failed, err: %v", err)
 			continue
@@ -103,8 +104,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 
 		resFile = append(resFile, spanUploadFile...)
 
-		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.TagMap, false)
-		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
+		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(tagMap, false)
+		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.GetSystemTagMap(), true)
 		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
 			LogID:            span.GetLogID(),
@@ -197,11 +198,11 @@ var tagValueConverterMap = map[string]*tagValueConverter{
 }
 
 type tagValueConverter struct {
-	convertFunc func(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error)
+	convertFunc func(ctx context.Context, spanKey string, span *Span, tagMap map[string]interface{}) (valueRes string, uploadFile []*entity.UploadFile, err error)
 }
 
-func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
-	value, ok := span.TagMap[spanKey]
+func convertInput(ctx context.Context, spanKey string, span *Span, tagMap map[string]interface{}) (valueRes string, uploadFile []*entity.UploadFile, err error) {
+	value, ok := tagMap[spanKey]
 	if !ok {
 		return
 	}
@@ -250,8 +251,8 @@ func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes str
 	return
 }
 
-func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
-	value, ok := span.TagMap[spanKey]
+func convertOutput(ctx context.Context, spanKey string, span *Span, tagMap map[string]interface{}) (valueRes string, uploadFile []*entity.UploadFile, err error) {
+	value, ok := tagMap[spanKey]
 	if !ok {
 		return
 	}
@@ -301,7 +302,7 @@ func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes st
 	return
 }
 
-func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*entity.UploadFile, putContentMap map[string]string, err error) {
+func parseInputOutput(ctx context.Context, span *Span, tagMap map[string]interface{}) (spanUploadFiles []*entity.UploadFile, putContentMap map[string]string, err error) {
 	if span == nil {
 		return
 	}
@@ -309,10 +310,10 @@ func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*entit
 	putContentMap = make(map[string]string)
 
 	for key, converter := range tagValueConverterMap {
-		if _, ok := span.GetTagMap()[key]; !ok {
+		if _, ok := tagMap[key]; !ok {
 			continue
 		}
-		newInput, inputFiles, err := converter.convertFunc(ctx, key, span)
+		newInput, inputFiles, err := converter.convertFunc(ctx, key, span, tagMap)
 		if err != nil {
 			return nil, nil, err
 		}
