@@ -90,7 +90,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 	resFile := make([]*entity.UploadFile, 0, len(spans))
 
 	for _, span := range spans {
-		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span)
+		snapshot := snapshotSpanMaps(span)
+		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span, snapshot)
 		if err != nil {
 			logger.CtxErrorf(ctx, "parseInputOutput failed, err: %v", err)
 			continue
@@ -103,8 +104,8 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 
 		resFile = append(resFile, spanUploadFile...)
 
-		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(span.TagMap, false)
-		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(span.SystemTagMap, true)
+		tagStrM, tagLongM, tagDoubleM, tagBoolM := parseTag(snapshot.tagMap, false)
+		systemTagStrM, systemTagLongM, systemTagDoubleM, _ := parseTag(snapshot.systemTagMap, true)
 		resSpan = append(resSpan, &entity.UploadSpan{
 			StartedATMicros:  span.GetStartTime().UnixMicro(),
 			LogID:            span.GetLogID(),
@@ -131,6 +132,43 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 	}
 
 	return resSpan, resFile
+}
+
+type spanMapSnapshot struct {
+	tagMap              map[string]interface{}
+	systemTagMap        map[string]interface{}
+	multiModalityKeyMap map[string]struct{}
+}
+
+func snapshotSpanMaps(span *Span) spanMapSnapshot {
+	snapshot := spanMapSnapshot{}
+	if span == nil {
+		return snapshot
+	}
+
+	span.lock.RLock()
+	defer span.lock.RUnlock()
+
+	if span.TagMap != nil {
+		snapshot.tagMap = make(map[string]interface{}, len(span.TagMap))
+		for key, value := range span.TagMap {
+			snapshot.tagMap[key] = value
+		}
+	}
+	if span.SystemTagMap != nil {
+		snapshot.systemTagMap = make(map[string]interface{}, len(span.SystemTagMap))
+		for key, value := range span.SystemTagMap {
+			snapshot.systemTagMap[key] = value
+		}
+	}
+	if span.multiModalityKeyMap != nil {
+		snapshot.multiModalityKeyMap = make(map[string]struct{}, len(span.multiModalityKeyMap))
+		for key := range span.multiModalityKeyMap {
+			snapshot.multiModalityKeyMap[key] = struct{}{}
+		}
+	}
+
+	return snapshot
 }
 
 func parseTag(spanTag map[string]interface{}, isSystemTag bool) (map[string]string, map[string]int64, map[string]float64, map[string]bool) {
@@ -197,17 +235,17 @@ var tagValueConverterMap = map[string]*tagValueConverter{
 }
 
 type tagValueConverter struct {
-	convertFunc func(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error)
+	convertFunc func(ctx context.Context, spanKey string, span *Span, snapshot spanMapSnapshot) (valueRes string, uploadFile []*entity.UploadFile, err error)
 }
 
-func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
-	value, ok := span.TagMap[spanKey]
+func convertInput(ctx context.Context, spanKey string, span *Span, snapshot spanMapSnapshot) (valueRes string, uploadFile []*entity.UploadFile, err error) {
+	value, ok := snapshot.tagMap[spanKey]
 	if !ok {
 		return
 	}
 
 	uploadFile = make([]*entity.UploadFile, 0)
-	if _, ok := span.multiModalityKeyMap[spanKey]; !ok {
+	if _, ok := snapshot.multiModalityKeyMap[spanKey]; !ok {
 		// input/output is just text string
 		var f *entity.UploadFile
 		valueRes, f = transferText(fmt.Sprintf("%v", value), span, spanKey)
@@ -250,14 +288,14 @@ func convertInput(ctx context.Context, spanKey string, span *Span) (valueRes str
 	return
 }
 
-func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes string, uploadFile []*entity.UploadFile, err error) {
-	value, ok := span.TagMap[spanKey]
+func convertOutput(ctx context.Context, spanKey string, span *Span, snapshot spanMapSnapshot) (valueRes string, uploadFile []*entity.UploadFile, err error) {
+	value, ok := snapshot.tagMap[spanKey]
 	if !ok {
 		return
 	}
 
 	uploadFile = make([]*entity.UploadFile, 0)
-	if _, ok := span.multiModalityKeyMap[spanKey]; !ok {
+	if _, ok := snapshot.multiModalityKeyMap[spanKey]; !ok {
 		// input/output is just text string
 		var f *entity.UploadFile
 		valueRes, f = transferText(fmt.Sprintf("%v", value), span, spanKey)
@@ -301,7 +339,7 @@ func convertOutput(ctx context.Context, spanKey string, span *Span) (valueRes st
 	return
 }
 
-func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*entity.UploadFile, putContentMap map[string]string, err error) {
+func parseInputOutput(ctx context.Context, span *Span, snapshot spanMapSnapshot) (spanUploadFiles []*entity.UploadFile, putContentMap map[string]string, err error) {
 	if span == nil {
 		return
 	}
@@ -309,10 +347,10 @@ func parseInputOutput(ctx context.Context, span *Span) (spanUploadFiles []*entit
 	putContentMap = make(map[string]string)
 
 	for key, converter := range tagValueConverterMap {
-		if _, ok := span.GetTagMap()[key]; !ok {
+		if _, ok := snapshot.tagMap[key]; !ok {
 			continue
 		}
-		newInput, inputFiles, err := converter.convertFunc(ctx, key, span)
+		newInput, inputFiles, err := converter.convertFunc(ctx, key, span, snapshot)
 		if err != nil {
 			return nil, nil, err
 		}
