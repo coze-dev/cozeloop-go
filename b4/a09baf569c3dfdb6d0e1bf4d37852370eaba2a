@@ -1,0 +1,31 @@
+internal/trace/exporter.go
+  s_d35edeabde3603::t_438ed6bcb3b6e8 93-94,107-108,201,204-205,254-255,305,313,316
+internal/trace/exporter_test.go
+  s_d35edeabde3603::t_409f485abc6f66 11,18
+internal/trace/queue_manager_test.go
+  s_d35edeabde3603::t_94dba14d8ba0cd 18
+internal/trace/race_test.go
+  s_d35edeabde3603::t_4d225fa0c79812 1-119
+internal/trace/span.go
+  s_d35edeabde3603::t_2f673d740e103e 146-162
+internal/trace/span_test.go
+  s_d35edeabde3603::t_08522d4dba00c9 132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b4a09baf569c3dfdb6d0e1bf4d37852370eaba2a",
+  "prompts": {},
+  "sessions": {
+    "s_d35edeabde3603": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "21508dc2-270f-4e31-bac9-2960c010147c",
+        "model": "unknown"
+      },
+      "human_author": "taoyifan <taoyifan@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
