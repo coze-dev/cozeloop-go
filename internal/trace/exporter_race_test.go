@@ -21,7 +21,7 @@ func (raceTestSpanProcessor) Shutdown(context.Context) error { return nil }
 
 func (raceTestSpanProcessor) ForceFlush(context.Context) error { return nil }
 
-func TestTransferToUploadSpanAndFileConcurrentMapMutation(t *testing.T) {
+func Test_TransferToUploadSpanAndFileConcurrentMapMutation(t *testing.T) {
 	ctx := context.Background()
 	span := &Span{
 		SpanContext: SpanContext{

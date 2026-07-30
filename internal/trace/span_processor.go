@@ -158,7 +158,7 @@ func (b *BatchSpanProcessor) OnSpanEnd(ctx context.Context, s *Span) {
 		return
 	}
 
-	b.spanQM.Enqueue(ctx, s, s.bytesSize)
+	b.spanQM.Enqueue(ctx, s, s.getBytesSize())
 }
 
 func (b *BatchSpanProcessor) Shutdown(ctx context.Context) error {
@@ -219,7 +219,7 @@ func newExportSpansFunc(
 		if err != nil { // fail, send to retry queue.
 			if spanRetryQueue != nil {
 				for _, span := range spans {
-					spanRetryQueue.Enqueue(ctx, span, span.bytesSize)
+					spanRetryQueue.Enqueue(ctx, span, span.getBytesSize())
 				}
 				errMsg = fmt.Sprintf("%v, retry later", err.Error())
 			} else {

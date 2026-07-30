@@ -90,7 +90,7 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 	resFile := make([]*entity.UploadFile, 0, len(spans))
 
 	for _, span := range spans {
-		snapshot := snapshotSpanMaps(span)
+		snapshot := span.getExportSnapshot()
 		spanUploadFile, putContentMap, err := parseInputOutput(ctx, span, snapshot)
 		if err != nil {
 			logger.CtxErrorf(ctx, "parseInputOutput failed, err: %v", err)
@@ -132,43 +132,6 @@ func transferToUploadSpanAndFile(ctx context.Context, spans []*Span) ([]*entity.
 	}
 
 	return resSpan, resFile
-}
-
-type spanMapSnapshot struct {
-	tagMap              map[string]interface{}
-	systemTagMap        map[string]interface{}
-	multiModalityKeyMap map[string]struct{}
-}
-
-func snapshotSpanMaps(span *Span) spanMapSnapshot {
-	snapshot := spanMapSnapshot{}
-	if span == nil {
-		return snapshot
-	}
-
-	span.lock.RLock()
-	defer span.lock.RUnlock()
-
-	if span.TagMap != nil {
-		snapshot.tagMap = make(map[string]interface{}, len(span.TagMap))
-		for key, value := range span.TagMap {
-			snapshot.tagMap[key] = value
-		}
-	}
-	if span.SystemTagMap != nil {
-		snapshot.systemTagMap = make(map[string]interface{}, len(span.SystemTagMap))
-		for key, value := range span.SystemTagMap {
-			snapshot.systemTagMap[key] = value
-		}
-	}
-	if span.multiModalityKeyMap != nil {
-		snapshot.multiModalityKeyMap = make(map[string]struct{}, len(span.multiModalityKeyMap))
-		for key := range span.multiModalityKeyMap {
-			snapshot.multiModalityKeyMap[key] = struct{}{}
-		}
-	}
-
-	return snapshot
 }
 
 func parseTag(spanTag map[string]interface{}, isSystemTag bool) (map[string]string, map[string]int64, map[string]float64, map[string]bool) {

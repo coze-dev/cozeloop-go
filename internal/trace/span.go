@@ -71,9 +71,9 @@ type Span struct {
 	ultraLargeReportKeyMap map[string]struct{}
 	ultraLargeReport       bool
 	spanProcessor          SpanProcessor
-	flags                  byte  // for W3C, useless now
-	isFinished             int32 // avoid executing finish repeatedly.
-	lock                   sync.RWMutex
+	flags                  byte             // for W3C, useless now
+	isFinished             int32            // read atomically; changed while lock is held.
+	lock                   sync.RWMutex     // guards mutable fields and serializes setters with Finish.
 	bytesSize              int64            // bytes size of span, note: it is an estimated value, may not be accurate.
 	tagTruncateConf        *TagTruncateConf // tag truncate byte conf
 }
@@ -84,6 +84,9 @@ type TagTruncateConf struct {
 }
 
 func (s *Span) GetBaggage() map[string]string {
+	if s == nil {
+		return nil
+	}
 	var bg map[string]string
 	s.lock.RLock()
 	rawBag := s.SpanContext.GetBaggage()
@@ -143,11 +146,61 @@ func (s *Span) GetTagMap() map[string]interface{} {
 	return tagMap
 }
 
+type spanMapSnapshot struct {
+	tagMap              map[string]interface{}
+	systemTagMap        map[string]interface{}
+	multiModalityKeyMap map[string]struct{}
+}
+
+func (s *Span) getExportSnapshot() spanMapSnapshot {
+	snapshot := spanMapSnapshot{}
+	if s == nil {
+		return snapshot
+	}
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if s.TagMap != nil {
+		snapshot.tagMap = make(map[string]interface{}, len(s.TagMap))
+		for key, value := range s.TagMap {
+			snapshot.tagMap[key] = value
+		}
+	}
+	if s.SystemTagMap != nil {
+		snapshot.systemTagMap = make(map[string]interface{}, len(s.SystemTagMap))
+		for key, value := range s.SystemTagMap {
+			snapshot.systemTagMap[key] = value
+		}
+	}
+	if s.multiModalityKeyMap != nil {
+		snapshot.multiModalityKeyMap = make(map[string]struct{}, len(s.multiModalityKeyMap))
+		for key := range s.multiModalityKeyMap {
+			snapshot.multiModalityKeyMap[key] = struct{}{}
+		}
+	}
+
+	return snapshot
+}
+
 func (s *Span) GetDuration() int64 {
 	if s == nil {
 		return 0
 	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	return int64(s.Duration)
+}
+
+func (s *Span) getBytesSize() int64 {
+	if s == nil {
+		return 0
+	}
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.bytesSize
 }
 
 func (s *Span) GetSpaceID() string {
@@ -307,15 +360,21 @@ func (s *Span) SetInput(ctx context.Context, input interface{}) {
 	}
 
 	isMultiModality := parseModelMessageParts(messageParts)
+	var multiModalityBytesSize int64
 	if isMultiModality {
-		s.SetMultiModalityMap(tracespec.Input)
-		size := getModelInputBytesSize(deepCopyMessageOfModelInput(mContent))
-		s.lock.Lock()
-		s.bytesSize += size
-		s.lock.Unlock()
+		multiModalityBytesSize = getModelInputBytesSize(deepCopyMessageOfModelInput(mContent))
 	}
 
-	s.SetTags(ctx, oneTag(tracespec.Input, input))
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	if isMultiModality {
+		s.setMultiModalityMapUnlock(tracespec.Input)
+		s.bytesSize += multiModalityBytesSize
+	}
+	s.setTagsUnlock(ctx, oneTag(tracespec.Input, input))
 }
 
 func deepCopyMessageOfModelInput(src tracespec.ModelInput) tracespec.ModelInput {
@@ -439,15 +498,21 @@ func (s *Span) SetOutput(ctx context.Context, output interface{}) {
 	}
 
 	isMultiModality := parseModelMessageParts(messageParts)
+	var multiModalityBytesSize int64
 	if isMultiModality {
-		s.SetMultiModalityMap(tracespec.Output)
-		size := getModelOutputBytesSize(deepCopyMessageOfModelOutput(mContent))
-		s.lock.Lock()
-		s.bytesSize += size
-		s.lock.Unlock()
+		multiModalityBytesSize = getModelOutputBytesSize(deepCopyMessageOfModelOutput(mContent))
 	}
 
-	s.SetTags(ctx, oneTag(tracespec.Output, output))
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	if isMultiModality {
+		s.setMultiModalityMapUnlock(tracespec.Output)
+		s.bytesSize += multiModalityBytesSize
+	}
+	s.setTagsUnlock(ctx, oneTag(tracespec.Output, output))
 }
 
 func deepCopyMessageOfModelOutput(src tracespec.ModelOutput) tracespec.ModelOutput {
@@ -524,11 +589,14 @@ func (s *Span) SetError(ctx context.Context, err error) {
 }
 
 func (s *Span) SetStatusCode(ctx context.Context, code int) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
 	s.StatusCode = int32(code)
 }
 
@@ -578,11 +646,17 @@ func (s *Span) SetPrompt(ctx context.Context, prompt entity.Prompt) {
 	if s == nil || s.isSpanFinished() {
 		return
 	}
-	if len(prompt.PromptKey) > 0 {
-		s.SetTags(ctx, oneTag(tracespec.PromptKey, prompt.PromptKey))
-		if len(prompt.Version) > 0 {
-			s.SetTags(ctx, oneTag(tracespec.PromptVersion, prompt.Version))
-		}
+	if len(prompt.PromptKey) == 0 {
+		return
+	}
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	s.setTagsUnlock(ctx, oneTag(tracespec.PromptKey, prompt.PromptKey))
+	if len(prompt.Version) > 0 {
+		s.setTagsUnlock(ctx, oneTag(tracespec.PromptVersion, prompt.Version))
 	}
 }
 
@@ -629,22 +703,19 @@ func (s *Span) SetStartTimeFirstResp(ctx context.Context, startTimeFirstResp int
 }
 
 func (s *Span) SetTags(ctx context.Context, tagKVs map[string]interface{}) {
-	if s == nil || len(tagKVs) == 0 || s.isSpanFinished() {
-		return
-	}
-
-	s.setTagsIgnoreFinish(ctx, tagKVs)
-}
-
-// after finish, inner use
-func (s *Span) setTagsIgnoreFinish(ctx context.Context, tagKVs map[string]interface{}) {
 	if s == nil || len(tagKVs) == 0 {
 		return
 	}
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	s.setTagsUnlock(ctx, tagKVs)
+}
 
+func (s *Span) setTagsUnlock(ctx context.Context, tagKVs map[string]interface{}) {
 	s.addDefaultTag(ctx, tagKVs)
 	rectifiedMap, cutOffKeys, byteSize := s.GetRectifiedMap(ctx, tagKVs)
 	s.bytesSize += byteSize
@@ -760,8 +831,18 @@ func isCanCutOff(value interface{}) bool {
 }
 
 func (s *Span) SetMultiModalityMap(key string) {
+	if s == nil {
+		return
+	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	s.setMultiModalityMapUnlock(key)
+}
+
+func (s *Span) setMultiModalityMapUnlock(key string) {
 	if s.multiModalityKeyMap == nil {
 		s.multiModalityKeyMap = make(map[string]struct{})
 	}
@@ -780,10 +861,13 @@ func (s *Span) SetBaggage(ctx context.Context, baggageItems map[string]string) {
 }
 
 func (s *Span) setBaggage(ctx context.Context, baggageItems map[string]string) {
-	if s == nil {
+	if s == nil || len(baggageItems) == 0 {
 		return
 	}
-	if len(baggageItems) == 0 {
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.isSpanFinished() {
 		return
 	}
 
@@ -791,10 +875,8 @@ func (s *Span) setBaggage(ctx context.Context, baggageItems map[string]string) {
 		if !isValidBaggageItem(ctx, key, value) {
 			logger.CtxErrorf(ctx, "invalid baggageItems:%s:%s", key, value)
 		} else {
-			s.SetTags(ctx, map[string]interface{}{key: value})
-			newKey := key
-			newValue := value
-			s.SetBaggageItem(newKey, newValue)
+			s.setTagsUnlock(ctx, map[string]interface{}{key: value})
+			s.setBaggageItemUnlock(key, value)
 		}
 	}
 }
@@ -825,8 +907,18 @@ func hasSpecialChar(s string) bool {
 }
 
 func (s *Span) SetBaggageItem(restrictedKey, value string) {
+	if s == nil {
+		return
+	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	s.setBaggageItemUnlock(restrictedKey, value)
+}
+
+func (s *Span) setBaggageItemUnlock(restrictedKey, value string) {
 	if s.Baggage == nil {
 		s.Baggage = make(map[string]string)
 	}
@@ -838,12 +930,23 @@ func (s *Span) Finish(ctx context.Context) {
 	if s == nil {
 		return
 	}
-	if !s.isDoFinish() {
+	if !s.finish(ctx) {
 		return
 	}
-	s.setSystemTag(ctx)
-	s.setStatInfo(ctx)
 	s.spanProcessor.OnSpanEnd(ctx, s)
+}
+
+func (s *Span) finish(ctx context.Context) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if !s.isDoFinish() {
+		return false
+	}
+	s.setSystemTagUnlock()
+	s.setStatInfoUnlock(ctx)
+
+	return true
 }
 
 func (s *Span) isDoFinish() bool {
@@ -854,9 +957,7 @@ func (s *Span) isSpanFinished() bool {
 	return atomic.LoadInt32(&s.isFinished) == spanFinished
 }
 
-func (s *Span) setSystemTag(ctx context.Context) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *Span) setSystemTagUnlock() {
 	if s.SystemTagMap == nil {
 		s.SystemTagMap = make(map[string]interface{})
 	}
@@ -879,29 +980,26 @@ func (s *Span) setSystemTag(ctx context.Context) {
 }
 
 // SetStatInfo sets statistical data.
-func (s *Span) setStatInfo(ctx context.Context) {
-	tagMap := s.GetTagMap()
-	if tempV, ok := tagMap[consts.StartTimeFirstResp]; ok {
+func (s *Span) setStatInfoUnlock(ctx context.Context) {
+	if tempV, ok := s.TagMap[consts.StartTimeFirstResp]; ok {
 		// latency_first_resp = start_time_first_resp - start_time
-		s.setTagsIgnoreFinish(ctx, map[string]interface{}{consts.LatencyFirstResp: util.GetValueOfInt(tempV) - s.GetStartTime().UnixMicro()})
+		s.setTagsUnlock(ctx, map[string]interface{}{consts.LatencyFirstResp: util.GetValueOfInt(tempV) - s.StartTime.UnixMicro()})
 	}
 
-	inputTokens, inputTokensExist := tagMap[tracespec.InputTokens]
-	outputTokens, outputTokensExist := tagMap[tracespec.OutputTokens]
+	inputTokens, inputTokensExist := s.TagMap[tracespec.InputTokens]
+	outputTokens, outputTokensExist := s.TagMap[tracespec.OutputTokens]
 	if inputTokensExist || outputTokensExist {
 		// tokens = input_tokens+output_tokens
-		s.setTagsIgnoreFinish(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
+		s.setTagsUnlock(ctx, map[string]interface{}{tracespec.Tokens: util.GetValueOfInt(inputTokens) + util.GetValueOfInt(outputTokens)})
 	}
 
 	// Duration = finish_time - start_time, unit: microseconds
 	finishTime := time.Now()
-	if !s.GetFinishTime().IsZero() {
-		finishTime = s.GetFinishTime()
+	if !s.FinishTime.IsZero() {
+		finishTime = s.FinishTime
 	}
-	duration := finishTime.UnixNano()/1000 - s.GetStartTime().UnixNano()/1000
-	s.lock.Lock()
+	duration := finishTime.UnixNano()/1000 - s.StartTime.UnixNano()/1000
 	s.Duration = time.Duration(duration)
-	s.lock.Unlock()
 }
 
 func (s *Span) GetStartTime() time.Time {
@@ -953,11 +1051,12 @@ func (s *Span) ToHeader() (map[string]string, error) {
 }
 
 func (s *Span) toHeaderBaggage() (string, error) {
-	if len(s.Baggage) == 0 {
+	baggage := s.GetBaggage()
+	if len(baggage) == 0 {
 		return "", nil
 	}
 	m := make(map[string]string)
-	for k, v := range s.Baggage {
+	for k, v := range baggage {
 		tempK := k
 		tempV := v
 		// empty key or value is invalid
@@ -973,11 +1072,14 @@ func (s *Span) toHeaderParent() string {
 }
 
 func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
 	if s.SystemTagMap == nil {
 		s.SystemTagMap = make(map[string]interface{})
 	}
@@ -986,20 +1088,26 @@ func (s *Span) SetRuntime(ctx context.Context, runtime tracespec.Runtime) {
 }
 
 func (s *Span) SetServiceName(ctx context.Context, serviceName string) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
 	s.ServiceName = serviceName
 }
 
 func (s *Span) SetLogID(ctx context.Context, logID string) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
 	s.LogID = logID
 }
 
@@ -1010,11 +1118,14 @@ func (s *Span) IsRootSpan() bool {
 // SetFinishTime
 // Default is time.Now() when span Finish(). DO NOT set unless you do not use default time.
 func (s *Span) SetFinishTime(finishTime time.Time) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
 	s.FinishTime = finishTime
 }
 
@@ -1029,11 +1140,17 @@ func (s *Span) GetFinishTime() time.Time {
 }
 
 func (s *Span) SetSystemTags(ctx context.Context, systemTags map[string]interface{}) {
-	if s == nil || s.isSpanFinished() {
+	if s == nil {
 		return
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if s.isSpanFinished() {
+		return
+	}
+	if s.SystemTagMap == nil {
+		s.SystemTagMap = make(map[string]interface{})
+	}
 	for key, value := range systemTags {
 		s.SystemTagMap[key] = value
 	}
