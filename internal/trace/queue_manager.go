@@ -228,6 +228,7 @@ func (b *BatchQueueManager) Enqueue(ctx context.Context, sd interface{}, byteSiz
 	if b.o.finishEventProcessor != nil {
 		b.o.finishEventProcessor(ctx, &consts.FinishEventInfo{
 			EventType:   eventType,
+			QueueName:   b.o.queueName,
 			IsEventFail: isFail,
 			ItemNum:     1,
 			DetailMsg:   detailMsg,

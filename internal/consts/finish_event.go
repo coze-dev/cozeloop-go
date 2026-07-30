@@ -12,6 +12,7 @@ const (
 
 type FinishEventInfo struct {
 	EventType   SpanFinishEvent
+	QueueName   string
 	IsEventFail bool
 	ItemNum     int // maybe multiple span is processed in one event
 	DetailMsg   string

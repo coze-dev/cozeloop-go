@@ -97,7 +97,7 @@ func NewBatchSpanProcessor(
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
 			maxExportBatchByteSize: MaxFileExportBatchByteSize,
-			exportFunc:             newExportFilesFunc(exporter, nil, finishEventProcessor),
+			exportFunc:             newExportFilesFunc(exporter, nil, finishEventProcessor, queueNameFileRetry),
 			finishEventProcessor:   finishEventProcessor,
 		})
 	fileQM := newBatchQueueManager(
@@ -107,7 +107,7 @@ func NewBatchSpanProcessor(
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
 			maxExportBatchByteSize: MaxFileExportBatchByteSize,
-			exportFunc:             newExportFilesFunc(exporter, fileRetryQM, finishEventProcessor),
+			exportFunc:             newExportFilesFunc(exporter, fileRetryQM, finishEventProcessor, queueNameFile),
 			finishEventProcessor:   finishEventProcessor,
 		})
 
@@ -118,7 +118,7 @@ func NewBatchSpanProcessor(
 			maxQueueLength:         DefaultMaxRetryQueueLength,
 			maxExportBatchLength:   MaxRetryExportBatchLength,
 			maxExportBatchByteSize: DefaultMaxExportBatchByteSize,
-			exportFunc:             newExportSpansFunc(exporter, nil, fileQM, finishEventProcessor),
+			exportFunc:             newExportSpansFunc(exporter, nil, fileQM, finishEventProcessor, queueNameSpanRetry),
 			finishEventProcessor:   finishEventProcessor,
 		})
 
@@ -129,7 +129,7 @@ func NewBatchSpanProcessor(
 			maxQueueLength:         spanQueueLength,
 			maxExportBatchLength:   spanMaxExportBatchLength,
 			maxExportBatchByteSize: DefaultMaxExportBatchByteSize,
-			exportFunc:             newExportSpansFunc(exporter, spanRetryQM, fileQM, finishEventProcessor),
+			exportFunc:             newExportSpansFunc(exporter, spanRetryQM, fileQM, finishEventProcessor, queueNameSpan),
 			finishEventProcessor:   finishEventProcessor,
 		})
 
@@ -201,6 +201,7 @@ func newExportSpansFunc(
 	spanRetryQueue QueueManager,
 	fileQueue QueueManager,
 	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo),
+	queueName string,
 ) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
 		spans := make([]*Span, 0, len(l))
@@ -238,6 +239,7 @@ func newExportSpansFunc(
 		if finishEventProcessor != nil {
 			finishEventProcessor(ctx, &consts.FinishEventInfo{
 				EventType:   consts.SpanFinishEventFlushSpanRate,
+				QueueName:   queueName,
 				IsEventFail: isFail,
 				ItemNum:     len(uploadSpans),
 				DetailMsg:   errMsg,
@@ -253,6 +255,7 @@ func newExportFilesFunc(
 	exporter Exporter,
 	fileRetryQueue QueueManager,
 	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo),
+	queueName string,
 ) exportFunc {
 	return func(ctx context.Context, l []interface{}) {
 		files := make([]*entity.UploadFile, 0, len(l))
@@ -280,6 +283,7 @@ func newExportFilesFunc(
 		if finishEventProcessor != nil {
 			finishEventProcessor(ctx, &consts.FinishEventInfo{
 				EventType:   consts.SpanFinishEventFlushFileRate,
+				QueueName:   queueName,
 				IsEventFail: isFail,
 				ItemNum:     len(files),
 				DetailMsg:   errMsg,
