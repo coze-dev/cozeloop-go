@@ -15,7 +15,7 @@ import (
 func Test_GetBatchSpanProcessor(t *testing.T) {
 	ctx := context.Background()
 	httpClient := &httpclient.Client{}
-	spanQM := NewBatchSpanProcessor(nil, httpClient, nil, nil)
+	spanQM := NewBatchSpanProcessor(nil, httpClient, nil, nil, nil)
 
 	PatchConvey("Test GetBatchSpanProcessor", t, func() {
 		PatchConvey("Test with valid inputs", func() {

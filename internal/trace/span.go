@@ -143,6 +143,23 @@ func (s *Span) GetTagMap() map[string]interface{} {
 	return tagMap
 }
 
+func (s *Span) GetSystemTagMap() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+
+	var tagMap map[string]interface{}
+	s.lock.RLock()
+	if s.SystemTagMap != nil {
+		tagMap = make(map[string]interface{})
+		for k, v := range s.SystemTagMap {
+			tagMap[k] = v
+		}
+	}
+	s.lock.RUnlock()
+	return tagMap
+}
+
 func (s *Span) GetDuration() int64 {
 	if s == nil {
 		return 0

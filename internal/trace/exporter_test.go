@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	. "github.com/bytedance/mockey"
+	"github.com/coze-dev/cozeloop-go/entity"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func Test_ExportSpans(t *testing.T) {
 	ctx := context.Background()
-	spans := []*UploadSpan{{}, {}}
+	spans := []*entity.UploadSpan{{}, {}}
 
 	PatchConvey("Test transferToUploadSpanAndFile failed", t, func() {
 		Mock((*httpclient.Client).Post).Return(nil).Build()
