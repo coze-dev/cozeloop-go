@@ -1,0 +1,25 @@
+internal/consts/finish_event.go
+  s_8c4b7c5589ae13::t_af8895bd8930ed 15
+internal/trace/queue_manager.go
+  s_8c4b7c5589ae13::t_73a082b9c1507b 231
+internal/trace/span_processor.go
+  s_8c4b7c5589ae13::t_da7969c23b536a 100,110,121,132,204,242,258,286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9f4dc91c8400e4c270b507179433008dc9a99a66",
+  "prompts": {},
+  "sessions": {
+    "s_8c4b7c5589ae13": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "535bf926-539b-4014-865a-958a3f5da26e",
+        "model": "unknown"
+      },
+      "human_author": "taoyifan <taoyifan@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
