@@ -36,7 +36,8 @@ type ModelMessage struct {
 	Role             string              `json:"role"`                        // from enum VRole in span_value
 	Content          string              `json:"content,omitempty"`           // single content
 	ReasoningContent string              `json:"reasoning_content,omitempty"` // only for output
-	Parts            []*ModelMessagePart `json:"parts,omitempty"`             // multi-modality content
+	EncryptedContent string              `json:"encrypted_content,omitempty"`
+	Parts            []*ModelMessagePart `json:"parts,omitempty"` // multi-modality content
 	Name             string              `json:"name,omitempty"`
 	ToolCalls        []*ModelToolCall    `json:"tool_calls,omitempty"`
 	ToolCallID       string              `json:"tool_call_id,omitempty"`
