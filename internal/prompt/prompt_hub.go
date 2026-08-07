@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/coze-dev/cozeloop-go/internal/span"
 	"github.com/valyala/fasttemplate"
 
 	"github.com/coze-dev/cozeloop-go/entity"
@@ -60,7 +61,7 @@ func NewPromptProvider(httpClient *httpclient.Client, traceProvider *trace.Provi
 
 func (p *Provider) GetPrompt(ctx context.Context, param GetPromptParam, options GetPromptOptions) (prompt *entity.Prompt, err error) {
 	if p.config.PromptTrace && p.traceProvider != nil {
-		var promptHubSpan *trace.Span
+		var promptHubSpan span.Span
 		var spanErr error
 		ctx, promptHubSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptHubSpanName, tracespec.VPromptHubSpanType,
 			trace.StartSpanOptions{Scene: tracespec.VScenePromptHub})
@@ -135,7 +136,7 @@ func (p *Provider) PromptFormat(ctx context.Context, prompt *entity.Prompt, vari
 		return nil, nil
 	}
 	if p.config.PromptTrace && p.traceProvider != nil {
-		var promptTemplateSpan *trace.Span
+		var promptTemplateSpan span.Span
 		var spanErr error
 		ctx, promptTemplateSpan, spanErr = p.traceProvider.StartSpan(ctx, consts.TracePromptTemplateSpanName, tracespec.VPromptTemplateSpanType,
 			trace.StartSpanOptions{Scene: tracespec.VScenePromptTemplate})

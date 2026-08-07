@@ -81,3 +81,11 @@ func WithSpanID(spanID string) StartSpanOption {
 		ops.SpanID = spanID
 	}
 }
+
+// WithNoSample Set the span and its child span to not be sampled.
+// This field is optional. If not specified, the sampling decision will be made by the parent span.
+func WithNoSample() StartSpanOption {
+	return func(ops *startSpanOptions) {
+		ops.NoSample = true
+	}
+}

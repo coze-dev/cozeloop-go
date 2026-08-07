@@ -11,6 +11,7 @@ import (
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/httpclient"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
+	"github.com/coze-dev/cozeloop-go/internal/span"
 	"github.com/coze-dev/cozeloop-go/internal/util"
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
@@ -41,6 +42,7 @@ type StartSpanOptions struct {
 	StartNewTrace bool
 	Scene         string
 	WorkspaceID   string
+	NoSample      bool // whether to disable sampling for this span and its child spans
 }
 
 type loopSpanKey struct{}
@@ -71,7 +73,16 @@ func (t *Provider) GetOpts() *Options {
 	return t.opt
 }
 
-func (t *Provider) StartSpan(ctx context.Context, name, spanType string, opts StartSpanOptions) (context.Context, *Span, error) {
+func (t *Provider) StartSpan(ctx context.Context, name, spanType string, opts StartSpanOptions) (context.Context, span.Span, error) {
+	if opts.NoSample {
+		ctx = context.WithValue(ctx, loopSpanKey{}, DefaultNoopSpan)
+		return ctx, DefaultNoopSpan, nil
+	}
+
+	if !t.shouldSample(ctx) {
+		return ctx, DefaultNoopSpan, nil
+	}
+
 	// 0. check param
 	if name == "" {
 		name = "unknown"
@@ -123,6 +134,11 @@ func (t *Provider) GetSpanFromContext(ctx context.Context) *Span {
 
 func (t *Provider) GetSpanFromHeader(ctx context.Context, header map[string]string) *SpanContext {
 	return FromHeader(ctx, header)
+}
+
+func (t *Provider) shouldSample(ctx context.Context) bool {
+	parentSpan := ctx.Value(loopSpanKey{})
+	return parentSpan != DefaultNoopSpan
 }
 
 func (t *Provider) startSpan(ctx context.Context, spanName string, spanType string, options StartSpanOptions) *Span {

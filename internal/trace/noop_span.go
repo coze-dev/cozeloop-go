@@ -8,10 +8,13 @@ import (
 	"time"
 
 	"github.com/coze-dev/cozeloop-go/entity"
+	"github.com/coze-dev/cozeloop-go/internal/span"
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
 
 var DefaultNoopSpan = &noopSpan{}
+
+var _ span.Span = noopSpan{}
 
 type noopSpan struct{}
 

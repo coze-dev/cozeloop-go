@@ -76,3 +76,40 @@ func Test_GetSpanFromHeader(t *testing.T) {
 		So(actual, ShouldEqual, expectedSpan)
 	})
 }
+
+func Test_NoSample(t *testing.T) {
+	PatchConvey("Test NoSample spans", t, func() {
+		provider := &Provider{
+			httpClient: &httpclient.Client{},
+			opt: &Options{
+				WorkspaceID:      "workspace-id",
+				UltraLargeReport: true,
+			},
+		}
+		ctx := context.Background()
+
+		// 1. Create a normal span
+		normalCtx, normalSpan, err := provider.StartSpan(ctx, "normal-span", "test-type", StartSpanOptions{
+			StartTime: time.Now(),
+		})
+		So(err, ShouldBeNil)
+		So(normalSpan, ShouldNotEqual, DefaultNoopSpan)
+		So(normalSpan, ShouldNotBeNil)
+
+		// 2. Create a NoSample span
+		noSampleCtx, noSampleSpan, err := provider.StartSpan(normalCtx, "nosample-span", "test-type", StartSpanOptions{
+			StartTime: time.Now(),
+			NoSample:  true,
+		})
+		So(err, ShouldBeNil)
+		So(noSampleSpan, ShouldEqual, DefaultNoopSpan)
+
+		// 3. Create a child span from NoSample span - should also be NoopSpan
+		childCtx, childSpan, err := provider.StartSpan(noSampleCtx, "child-span", "test-type", StartSpanOptions{
+			StartTime: time.Now(),
+		})
+		So(err, ShouldBeNil)
+		So(childSpan, ShouldEqual, DefaultNoopSpan)
+		So(childCtx, ShouldNotBeNil)
+	})
+}

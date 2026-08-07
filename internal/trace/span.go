@@ -19,6 +19,7 @@ import (
 	"github.com/coze-dev/cozeloop-go/internal"
 	"github.com/coze-dev/cozeloop-go/internal/consts"
 	"github.com/coze-dev/cozeloop-go/internal/logger"
+	"github.com/coze-dev/cozeloop-go/internal/span"
 	"github.com/coze-dev/cozeloop-go/internal/util"
 	"github.com/coze-dev/cozeloop-go/spec/tracespec"
 )
@@ -27,6 +28,8 @@ const (
 	spanUnFinished = 0
 	spanFinished   = 1
 )
+
+var _ span.SpanContext = (*SpanContext)(nil)
 
 type SpanContext struct {
 	SpanID  string
@@ -45,6 +48,8 @@ func (s *SpanContext) GetTraceID() string {
 func (s *SpanContext) GetBaggage() map[string]string {
 	return s.Baggage
 }
+
+var _ span.Span = (*Span)(nil)
 
 type Span struct {
 	// span context param
