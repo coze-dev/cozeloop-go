@@ -44,7 +44,7 @@ func Test_GetSpanFromHeader(t *testing.T) {
 	opts := StartSpanOptions{
 		StartTime:    time.Now(),
 		ParentSpanID: "1433434",
-		TraceID:      "1111111111111",
+		TraceID:      "12345678901234567890123456789012",
 		Baggage:      map[string]string{"key": "value"},
 	}
 	PatchConvey("Test FromHeader failed", t, func() {
@@ -65,14 +65,13 @@ func Test_GetSpanFromHeader(t *testing.T) {
 
 	PatchConvey("Test FromHeader success", t, func() {
 		t := &Provider{}
-		expectedSpan := &Span{
-			SpanContext: SpanContext{
-				TraceID: "1234567890",
-				SpanID:  "0987654321",
-			},
+		expectedSpan := &SpanContext{
+			TraceID: "1234567890",
+			SpanID:  "0987654321",
 		}
+
 		Mock(FromHeader).Return(expectedSpan).Build()
-		actual := t.GetSpanFromHeader(nil, nil)
-		So(actual, ShouldEqual, expectedSpan)
+		x := t.GetSpanFromHeader(nil, nil)
+		So(x, ShouldEqual, expectedSpan)
 	})
 }
