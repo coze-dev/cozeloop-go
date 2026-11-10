@@ -46,6 +46,22 @@ func main() {
 }
 ```
 
+可通过 `TraceQueueConf.ExportConcurrency` 配置每个队列的批次上报并发度：
+
+```go
+client, err := loop.NewClient(
+    loop.WithTraceQueueConf(&loop.TraceQueueConf{
+        ExportConcurrency: 4,
+    }),
+)
+if err != nil {
+    panic(err)
+}
+defer client.Close(context.Background())
+```
+
+未配置或值小于等于 `1` 时，保持各队列内串行上报。大于 `1` 时，Span、文件及各自的重试队列分别采用该并发上限，批次完成顺序不保证。队列容量、批次大小和重试次数保持原有配置；队列满时仍会丢弃新数据。`Flush` 和 `Close` 会在 context 允许的时间内等待已发起的上报。自定义 Exporter 和事件回调需要支持并发调用。
+
 ### Prompt拉取
 ```go
 func main() {
