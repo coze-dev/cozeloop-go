@@ -45,6 +45,7 @@ type batchQueueManagerOptions struct {
 	batchTimeout           time.Duration
 	maxExportBatchLength   int
 	maxExportBatchByteSize int
+	exportConcurrency      int
 
 	exportFunc           exportFunc
 	finishEventProcessor func(ctx context.Context, info *consts.FinishEventInfo)
@@ -69,6 +70,10 @@ func newBatchQueueManager(o batchQueueManagerOptions) *BatchQueueManager {
 	bsp.stopWait.Add(1)
 	util.GoSafe(context.Background(), func() {
 		defer bsp.stopWait.Done()
+		if o.exportConcurrency > 1 {
+			bsp.processConcurrentQueue()
+			return
+		}
 		bsp.processQueue()
 		bsp.drainQueue(context.Background())
 	})
@@ -202,11 +207,17 @@ func (b *BatchQueueManager) Enqueue(ctx context.Context, sd interface{}, byteSiz
 	eventType := consts.SpanFinishEventFileQueueEntryRate
 	var detailMsg string
 	var isFail bool
+	item := sd
+	if b.o.exportConcurrency > 1 {
+		item = concurrentQueueItem{value: sd, byteSize: byteSize}
+	}
 	select {
-	case b.queue <- sd:
-		b.sizeMutex.Lock()
-		b.batchByteSize += byteSize
-		b.sizeMutex.Unlock()
+	case b.queue <- item:
+		if b.o.exportConcurrency <= 1 {
+			b.sizeMutex.Lock()
+			b.batchByteSize += byteSize
+			b.sizeMutex.Unlock()
+		}
 		detailMsg = fmt.Sprintf("%s enqueue, queue length: %d", b.o.queueName, len(b.queue))
 	default: // queue is full, not block, drop
 		detailMsg = fmt.Sprintf("%s queue is full, dropped item", b.o.queueName)
@@ -294,6 +305,11 @@ func (b *BatchQueueManager) ForceFlush(ctx context.Context) error {
 		return ctx.Err()
 	}
 
+	if b.o.exportConcurrency > 1 {
+		// The concurrent queue acknowledges the marker only after all preceding
+		// batches have finished exporting.
+		return nil
+	}
 	var err error
 	b.drainQueue(ctx)
 	return err

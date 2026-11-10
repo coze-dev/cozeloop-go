@@ -41,6 +41,10 @@ const (
 type QueueConf struct {
 	SpanQueueLength          int
 	SpanMaxExportBatchLength int
+	// ExportConcurrency limits concurrent batch exports per queue, including retry
+	// and file queues. Values <= 1 preserve synchronous exports within each queue.
+	// Custom exporters and finish event processors must support concurrent calls.
+	ExportConcurrency int
 }
 
 var _ SpanProcessor = (*BatchSpanProcessor)(nil)
@@ -81,7 +85,11 @@ func NewBatchSpanProcessor(
 	}
 	spanQueueLength := DefaultMaxQueueLength
 	spanMaxExportBatchLength := DefaultMaxExportBatchLength
+	exportConcurrency := 1
 	if queueConf != nil {
+		if queueConf.ExportConcurrency > 1 {
+			exportConcurrency = queueConf.ExportConcurrency
+		}
 		if queueConf.SpanQueueLength > 0 {
 			spanQueueLength = queueConf.SpanQueueLength
 		}
@@ -93,6 +101,7 @@ func NewBatchSpanProcessor(
 	fileRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              queueNameFileRetry,
+			exportConcurrency:      exportConcurrency,
 			batchTimeout:           time.Duration(FileScheduleDelay) * time.Millisecond,
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
@@ -103,6 +112,7 @@ func NewBatchSpanProcessor(
 	fileQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              queueNameFile,
+			exportConcurrency:      exportConcurrency,
 			batchTimeout:           time.Duration(FileScheduleDelay) * time.Millisecond,
 			maxQueueLength:         MaxFileQueueLength,
 			maxExportBatchLength:   MaxFileExportBatchLength,
@@ -114,6 +124,7 @@ func NewBatchSpanProcessor(
 	spanRetryQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              queueNameSpanRetry,
+			exportConcurrency:      exportConcurrency,
 			batchTimeout:           time.Duration(DefaultScheduleDelay) * time.Millisecond,
 			maxQueueLength:         DefaultMaxRetryQueueLength,
 			maxExportBatchLength:   MaxRetryExportBatchLength,
@@ -125,6 +136,7 @@ func NewBatchSpanProcessor(
 	spanQM := newBatchQueueManager(
 		batchQueueManagerOptions{
 			queueName:              queueNameSpan,
+			exportConcurrency:      exportConcurrency,
 			batchTimeout:           time.Duration(DefaultScheduleDelay) * time.Millisecond,
 			maxQueueLength:         spanQueueLength,
 			maxExportBatchLength:   spanMaxExportBatchLength,

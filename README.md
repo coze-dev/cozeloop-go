@@ -45,6 +45,22 @@ func main() {
 }
 ```
 
+Set `TraceQueueConf.ExportConcurrency` to configure concurrent batch exports per queue:
+
+```go
+client, err := loop.NewClient(
+    loop.WithTraceQueueConf(&loop.TraceQueueConf{
+        ExportConcurrency: 4,
+    }),
+)
+if err != nil {
+    panic(err)
+}
+defer client.Close(context.Background())
+```
+
+Unset values and values <= `1` preserve serial exports within each queue. Higher values apply independently to the span, file, and respective retry queues; batches may complete out of order. Queue capacity, batch size, and retry counts retain their existing settings, and full queues still drop new items. `Flush` and `Close` wait for in-flight exports within the context deadline. Custom exporters and event callbacks must support concurrent calls.
+
 ### Get Prompt
 ```go
 func main() {
