@@ -117,3 +117,64 @@ func Test_SetTagsFinishRace(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+// Test_ToHeaderBaggageRace covers ToHeader racing with SetBaggage on the same
+// span. ToHeader runs on the request path (for example the trace header
+// enricher of the HTTP client), while baggage can be set from another
+// goroutine. Before the fix toHeaderBaggage iterated span.Baggage without
+// holding s.lock. Run with -race.
+func Test_ToHeaderBaggageRace(t *testing.T) {
+	ctx := context.Background()
+
+	s := &Span{
+		SpanContext: SpanContext{
+			SpanID:  "span",
+			TraceID: "trace",
+			Baggage: make(map[string]string),
+		},
+		lock:         sync.RWMutex{},
+		TagMap:       make(map[string]interface{}),
+		SystemTagMap: make(map[string]interface{}),
+	}
+	s.SetBaggage(ctx, map[string]string{"seed": "v"})
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		n := 0
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			s.SetBaggage(ctx, map[string]string{fmt.Sprintf("k%d", n%64): "v"})
+			n++
+		}
+	}()
+
+	for r := 0; r < 4; r++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				if _, err := s.ToHeader(); err != nil {
+					t.Error(err)
+					return
+				}
+			}
+		}()
+	}
+
+	time.Sleep(200 * time.Millisecond)
+	close(stop)
+	wg.Wait()
+}

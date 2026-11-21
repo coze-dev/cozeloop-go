@@ -970,11 +970,12 @@ func (s *Span) ToHeader() (map[string]string, error) {
 }
 
 func (s *Span) toHeaderBaggage() (string, error) {
-	if len(s.Baggage) == 0 {
+	baggage := s.GetBaggage()
+	if len(baggage) == 0 {
 		return "", nil
 	}
 	m := make(map[string]string)
-	for k, v := range s.Baggage {
+	for k, v := range baggage {
 		tempK := k
 		tempV := v
 		// empty key or value is invalid
